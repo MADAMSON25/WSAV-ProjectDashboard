@@ -466,21 +466,27 @@ function flashSaved(msg='Saved'){
 let msalInstance=null, spAccount=null, spToken=null, spEnabled=false;
 
 async function initMSAL(){
-  // Client ID is configured
-  try{
+  // Always create and initialise the MSAL instance
+  if(!msalInstance){
     msalInstance=new msal.PublicClientApplication({
       auth:{clientId:AZURE_CLIENT_ID,authority:'https://login.microsoftonline.com/common',redirectUri:window.location.href.split('?')[0].split('#')[0]},
       cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}
     });
     await msalInstance.initialize();
-    const accounts=msalInstance.getAllAccounts();
-    if(accounts.length>0){
+  }
+  // Try silent sign-in if we have an existing account
+  const accounts=msalInstance.getAllAccounts();
+  if(accounts.length>0){
+    try{
       spAccount=accounts[0];
       await refreshSPToken();
       return true;
+    }catch(e){
+      console.warn('Silent token refresh failed:',e);
+      return false;
     }
-    return false;
-  }catch(e){console.warn('MSAL init failed:',e);return false;}
+  }
+  return false;
 }
 
 async function refreshSPToken(){
@@ -925,7 +931,8 @@ document.getElementById('signin-btn').onclick=async function(){
   const err=document.getElementById('signin-error');
   this.disabled=true;this.textContent='Signing In…';
   try{
-    await initMSAL();
+    // Ensure MSAL is initialised (may already be from init())
+    if(!msalInstance){await initMSAL();}
     await signInWithMicrosoft();
     spEnabled=true;
     document.getElementById('signin-screen').classList.add('hidden');
