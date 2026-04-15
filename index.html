@@ -469,7 +469,7 @@ async function initMSAL(){
   // Always create and initialise the MSAL instance
   if(!msalInstance){
     msalInstance=new msal.PublicClientApplication({
-      auth:{clientId:AZURE_CLIENT_ID,authority:'https://login.microsoftonline.com/common',redirectUri:window.location.href.split('?')[0].split('#')[0]},
+      auth:{clientId:AZURE_CLIENT_ID,authority:'https://login.microsoftonline.com/organizations',redirectUri:window.location.href.split('?')[0].split('#')[0]},
       cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}
     });
     await msalInstance.initialize();
