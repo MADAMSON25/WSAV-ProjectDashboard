@@ -388,6 +388,20 @@ html,body{width:100%;min-height:100vh;font-family:'Segoe UI',system-ui,sans-seri
     </div>
     <div style="font-size:11px;color:var(--wsav-text-muted);margin:8px 0 14px">Leave blank to include all projects regardless of date</div>
     <hr class="export-divider"/>
+    <div class="modal-field">
+      <label>Filter Projects</label>
+      <div class="ex-filter-chips">
+        <button class="ex-chip ch-all active" data-filter="all">All Projects</button>
+        <button class="ex-chip ch-planning" data-filter="Planning">Planning</button>
+        <button class="ex-chip ch-scheduled" data-filter="Scheduled">Scheduled</button>
+        <button class="ex-chip ch-inprogress" data-filter="In Progress">In Progress</button>
+        <button class="ex-chip ch-snagging" data-filter="Snagging">Snagging</button>
+        <button class="ex-chip ch-complete" data-filter="Complete">Complete</button>
+        <button class="ex-chip ch-risk" data-filter="risk">⚠ Has Risk</button>
+      </div>
+      <div class="ex-project-count" id="ex-project-count"></div>
+    </div>
+    <hr class="export-divider"/>
     <div class="modal-field"><label>Include In Report</label></div>
     <div class="export-checks">
       <label class="export-check"><input type="checkbox" id="ex-summary" checked/> Executive Summary</label>
