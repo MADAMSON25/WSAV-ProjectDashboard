@@ -815,9 +815,22 @@ function renderPanelContent(p){
   document.getElementById("dp-add-phase").onclick=function(){const inp=document.getElementById("dp-new-phase");const nm=inp.value.trim();if(!nm)return;p.phases.push({name:nm,tasks:[]});inp.value="";saveProject(p);renderPhasesInPanel(p);};
   renderPhasesInPanel(p);
 }
+const DEFAULT_PHASE_NAMES=new Set(["Planning","Scheduled","Installation","Snagging","Handover"]);
 function renderPhasesInPanel(p){
   const container=document.getElementById("dp-phases");container.innerHTML="";const activeName=STATUS_TO_PHASE[p.status];
-  p.phases.forEach((ph,phi)=>{const done=ph.tasks.filter(t=>t.done).length,isActive=ph.name===activeName;const phDiv=document.createElement("div");phDiv.className="phase"+(isActive?" open":"");phDiv.innerHTML=`<div class="phase-head"><span class="phase-name">${ph.name}${isActive?'<span class="phase-active-dot"></span>':''}</span><div class="phase-right"><span class="phase-count">${done}/${ph.tasks.length}</span><span class="chevron">▼</span></div></div><div class="phase-body"><ul class="task-list" id="dpt-${phi}"></ul><div class="add-task-row"><input class="wsav-input" type="text" placeholder="Add A Task…" id="dpti-${phi}" style="padding:6px 9px"/><label class="risk-check-label"><input type="checkbox" id="dptirisk-${phi}"/>⚠ Risk</label><button data-phi="${phi}">+ Add</button></div></div>`;phDiv.querySelector(".phase-head").onclick=()=>phDiv.classList.toggle("open");const addBtn=phDiv.querySelector("[data-phi]");addBtn.type="button";addBtn.onclick=function(e){e.preventDefault();e.stopPropagation();const inp=document.getElementById(`dpti-${phi}`);const txt=inp.value.trim();if(!txt)return;p.phases[phi].tasks.push({text:txt,done:false,risk:false});inp.value="";saveProject(p);renderPhasesInPanel(p);renderGrid();};container.appendChild(phDiv);renderTasksInPanel(p,phi);});
+  p.phases.forEach((ph,phi)=>{
+    const done=ph.tasks.filter(t=>t.done).length,isActive=ph.name===activeName;
+    const isDefault=DEFAULT_PHASE_NAMES.has(ph.name);
+    const phDiv=document.createElement("div");phDiv.className="phase"+(isActive?" open":"");
+    const delBtnHtml=!isDefault?`<button class="phase-delete-btn" data-delphi="${phi}" title="Delete phase" type="button" style="background:none;border:none;cursor:pointer;color:#3d6b66;font-size:13px;padding:0 4px;line-height:1;opacity:0.7" onmouseover="this.style.opacity=1;this.style.color='#ff8a80'" onmouseout="this.style.opacity=0.7;this.style.color='#3d6b66'">&#10005;</button>`:"";
+    phDiv.innerHTML=`<div class="phase-head"><span class="phase-name">${ph.name}${isActive?'<span class="phase-active-dot"></span>':''}</span><div class="phase-right"><span class="phase-count">${done}/${ph.tasks.length}</span>${delBtnHtml}<span class="chevron">&#9660;</span></div></div><div class="phase-body"><ul class="task-list" id="dpt-${phi}"></ul><div class="add-task-row"><input class="wsav-input" type="text" placeholder="Add A Task&#8230;" id="dpti-${phi}" style="padding:6px 9px"/><label class="risk-check-label"><input type="checkbox" id="dptirisk-${phi}"/>&#9888; Risk</label><button data-phi="${phi}" type="button">+ Add</button></div></div>`;
+    phDiv.querySelector(".phase-head").onclick=function(e){if(e.target.closest("[data-delphi]"))return;phDiv.classList.toggle("open");};
+    const delPhaseBtn=phDiv.querySelector("[data-delphi]");
+    if(delPhaseBtn){delPhaseBtn.onclick=function(e){e.stopPropagation();if(!confirm("Delete phase \""+ph.name+"\" and all its tasks?"))return;p.phases.splice(phi,1);saveProject(p);renderPhasesInPanel(p);renderGrid();};}
+    const addBtn=phDiv.querySelector("[data-phi]");
+    addBtn.onclick=function(e){e.preventDefault();e.stopPropagation();const inp=document.getElementById("dpti-"+phi);const txt=inp.value.trim();if(!txt)return;const riskCb=document.getElementById("dptirisk-"+phi);const isRisk=riskCb?riskCb.checked:false;p.phases[phi].tasks.push({text:txt,done:false,risk:isRisk});inp.value="";if(riskCb)riskCb.checked=false;saveProject(p);renderPhasesInPanel(p);renderGrid();};
+    container.appendChild(phDiv);renderTasksInPanel(p,phi);
+  });
 }
 function renderTasksInPanel(p,phi){
   const ul=document.getElementById(`dpt-${phi}`);if(!ul)return;ul.innerHTML="";
