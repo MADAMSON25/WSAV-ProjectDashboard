@@ -234,6 +234,9 @@ html,body{width:100%;min-height:100vh;font-family:'Segoe UI',system-ui,sans-seri
 .save-indicator{font-size:11px;color:var(--wsav-text-muted);display:flex;align-items:center;gap:5px;opacity:0;transition:opacity 0.4s}
 .save-indicator.show{opacity:1}
 .save-dot{width:6px;height:6px;border-radius:50%;background:#6ee68b;flex-shrink:0}
+.pm-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.35);color:var(--wsav-gold);font-size:10px;font-weight:800;flex-shrink:0;letter-spacing:0.02em;cursor:default}
+.pm-badge:hover{background:rgba(212,160,23,0.25)}
+.pm-badge-unset{background:rgba(138,173,169,0.08);border-color:var(--wsav-border);color:var(--wsav-text-muted)}
 
 /* ── Responsive breakpoints ── */
 @media(max-width:900px){
@@ -369,6 +372,7 @@ html,body{width:100%;min-height:100vh;font-family:'Segoe UI',system-ui,sans-seri
       <select class="wsav-input" id="np-status"><option>Planning</option><option>Scheduled</option><option>In Progress</option><option>Snagging</option><option>Complete</option></select>
     </div>
     <div class="modal-field"><label>Due Date</label><input class="wsav-input" type="date" id="np-due"/></div>
+    <div class="modal-field"><label>Allocated PM (Initials)</label><input class="wsav-input" type="text" id="np-pm" placeholder="e.g. JD" maxlength="2" style="text-transform:uppercase;width:80px"/></div>
     <div class="modal-actions"><button class="btn-outline" id="np-cancel">Cancel</button><button class="btn-gold" id="np-create">Create Project</button></div>
   </div>
 </div>
@@ -456,7 +460,7 @@ const rawProjects=[
   ["Skanska - Timber Square","1303"],["Smashburger - Wednesbury - Dunfermline","2330"],["Taula Capital - Jersey New Office","1556"],
   ["UMG - Hilversum Meeting Room 1 & 2","2364"],["WSP - Westferry 4th Floor","2230"],["WSP - Ricardo Meeting Rms","2380"]
 ];
-function buildDefaultProjects(){return rawProjects.map(([name,num],i)=>{return{id:"p"+i,name,num,status:"Planning",due:"",notes:"",archived:false,phases:JSON.parse(JSON.stringify(defaultPhases))};}); }
+function buildDefaultProjects(){return rawProjects.map(([name,num],i)=>{return{id:"p"+i,name,num,status:"Planning",due:"",notes:"",pm:"",archived:false,phases:JSON.parse(JSON.stringify(defaultPhases))};}); }
 
 /* ═══════════════════════════════════════════════════
    LOCAL STORAGE
@@ -482,6 +486,7 @@ function loadLocal(){
       defaults.forEach(dp=>{if(!savedIds.has(dp.id))merged.push(dp);});
       merged.forEach(p=>{
         if(!p.phases)p.phases=JSON.parse(JSON.stringify(defaultPhases));
+        if(p.pm===undefined)p.pm='';
         defaultPhases.forEach((dph,dpi)=>{
           if(!p.phases[dpi]){p.phases[dpi]=JSON.parse(JSON.stringify(dph));return;}
           dph.tasks.forEach((dtask,dti)=>{if(!p.phases[dpi].tasks[dti])p.phases[dpi].tasks[dti]=JSON.parse(JSON.stringify(dtask));});
@@ -552,12 +557,12 @@ const spPost=(ep,b)=>spFetch(ep,{method:'POST',body:JSON.stringify(b)});
 const spMerge=(ep,b)=>spFetch(ep,{method:'POST',body:JSON.stringify(b),headers:{'X-HTTP-Method':'MERGE','IF-MATCH':'*'}});
 
 async function spLoadAll(){
-  const data=await spGet(`/web/lists/getbytitle('${encodeURIComponent(SP_LIST)}')/items?$select=Id,Title,ProjectNumber,Status,DueDate,Notes,Archived,PhasesJSON&$top=500`);
+  const data=await spGet(`/web/lists/getbytitle('${encodeURIComponent(SP_LIST)}')/items?$select=Id,Title,ProjectNumber,Status,DueDate,Notes,Archived,PM,PhasesJSON&$top=500`);
   const map={};
   data.value.forEach(item=>{
     map[item.Title]={
       spId:item.Id,num:item.ProjectNumber||'',status:item.Status||'Planning',
-      due:item.DueDate?item.DueDate.split('T')[0]:'',notes:item.Notes||'',
+      due:item.DueDate?item.DueDate.split('T')[0]:'',notes:item.Notes||'',pm:item.PM||'',
       archived:item.Archived||false,
       phases:item.PhasesJSON?JSON.parse(item.PhasesJSON):JSON.parse(JSON.stringify(defaultPhases))
     };
@@ -568,7 +573,7 @@ async function spLoadAll(){
 async function spCreateItem(p){
   const result=await spPost(`/web/lists/getbytitle('${encodeURIComponent(SP_LIST)}')/items`,{
     Title:p.name,ProjectNumber:p.num,Status:p.status,DueDate:p.due||null,
-    Notes:p.notes,Archived:p.archived,PhasesJSON:JSON.stringify(p.phases)
+    Notes:p.notes,PM:p.pm||'',Archived:p.archived,PhasesJSON:JSON.stringify(p.phases)
   });
   return result.Id||result.id;
 }
@@ -582,7 +587,7 @@ async function spSaveItem(p){
   }
   await spMerge(`/web/lists/getbytitle('${encodeURIComponent(SP_LIST)}')/items(${p.spId})`,{
     ProjectNumber:p.num,Status:p.status,DueDate:p.due||null,
-    Notes:p.notes,Archived:p.archived,PhasesJSON:JSON.stringify(p.phases)
+    Notes:p.notes,PM:p.pm||'',Archived:p.archived,PhasesJSON:JSON.stringify(p.phases)
   });
 }
 
@@ -599,7 +604,7 @@ async function syncFromSP(){
       const spData=spMap[p.name];
       if(spData){
         p.spId=spData.spId;p.num=spData.num||p.num;p.status=spData.status;
-        p.due=spData.due;p.notes=spData.notes;p.archived=spData.archived;
+        p.due=spData.due;p.notes=spData.notes;p.pm=spData.pm||p.pm||'';p.archived=spData.archived;
         p.phases=spData.phases;
       }
     });
@@ -720,7 +725,7 @@ function makeCard(p,isArchive){
   let dueBadge="";
   if(p.due){if(isO)dueBadge=`<span class="due-badge-overdue">⚠ Overdue ${Math.abs(days)}d</span>`;else if(isU)dueBadge=`<span class="due-badge-urgent">⚡ Due In ${days}d</span>`;else dueBadge=`<span class="due-badge-normal">Due: ${formatDue(p.due)}</span>`;}
   const hasRisk=p.phases.some(ph=>ph.tasks.some(t=>t.risk&&!t.done));
-  const topDiv=document.createElement("div");topDiv.innerHTML=`<div class="card-top"><div style="display:flex;align-items:center;gap:6px"><div class="card-name">${p.name}</div>${hasRisk?'<span class="risk-badge" title="This project has risk tasks">!</span>':""}</div>${p.num?`<div class="card-num">#${p.num}</div>`:""}</div>`;card.appendChild(topDiv);
+  const topDiv=document.createElement("div");topDiv.innerHTML=`<div class="card-top"><div style="display:flex;align-items:center;gap:6px"><div class="card-name">${p.name}</div>${hasRisk?'<span class="risk-badge" title="This project has risk tasks">!</span>':""}</div><div style="display:flex;align-items:center;gap:6px">${p.num?`<div class="card-num">#${p.num}</div>`:""}<span class="pm-badge${p.pm?'':' pm-badge-unset'}" title="${p.pm?'PM: '+p.pm:'No PM assigned'}">${p.pm||'?'}</span></div></div>`;card.appendChild(topDiv);
   const metaDiv=document.createElement("div");metaDiv.className="card-meta";
   if(!isArchive){metaDiv.appendChild(makeStatusSelect(p));}else{const ab=document.createElement("span");ab.className="due-badge-normal";ab.textContent="Archived";metaDiv.appendChild(ab);}
   if(dueBadge){const tmp=document.createElement("div");tmp.innerHTML=dueBadge;metaDiv.appendChild(tmp.firstElementChild);}
@@ -775,7 +780,7 @@ function openPanel(id){
 }
 function renderPanelContent(p){
   const c=document.getElementById("panel-content");
-  c.innerHTML=`<div class="field-group"><div class="field-label">Project Name</div><input class="wsav-input" type="text" id="dp-name" value="${p.name.replace(/"/g,'&quot;')}" style="width:100%"/></div><div class="field-group"><div class="field-label">Project Number</div><input class="wsav-input rename-num" type="text" id="dp-num" value="${p.num||''}" placeholder="e.g. 2442"/></div><div class="field-group"><div class="field-label">Status</div><select class="wsav-input" id="dp-status" style="width:100%">${STATUSES.map(s=>`<option ${p.status===s?"selected":""}>${s}</option>`).join("")}</select></div><div class="field-group"><div class="field-label">Due Date</div><input class="wsav-input" type="date" id="dp-due" value="${p.due||""}" style="width:100%"/></div><div class="field-group"><button class="archive-action-btn" id="dp-archive">${p.archived?"Restore From Archive":"Move To Archive"}</button></div><div class="field-group"><button class="complete-all-btn" id="dp-complete-all">Mark All Tasks Complete</button></div><div class="section-head">Phases &amp; Tasks</div><div class="phases" id="dp-phases"></div><div class="add-phase-row" style="margin-top:10px"><input class="wsav-input" type="text" id="dp-new-phase" placeholder="Add A Phase…" style="flex:1;padding:6px 9px"/><button id="dp-add-phase">+ Phase</button></div><div class="notes-label">Notes</div><div class="notes-area"><textarea id="dp-notes" placeholder="Blockers, Decisions, Client Comms…">${p.notes||""}</textarea></div>`;
+  c.innerHTML=`<div class="field-group"><div class="field-label">Project Name</div><input class="wsav-input" type="text" id="dp-name" value="${p.name.replace(/"/g,'&quot;')}" style="width:100%"/></div><div class="field-group"><div class="field-label">Project Number</div><input class="wsav-input rename-num" type="text" id="dp-num" value="${p.num||''}" placeholder="e.g. 2442"/></div><div class="field-group"><div class="field-label">Status</div><select class="wsav-input" id="dp-status" style="width:100%">${STATUSES.map(s=>`<option ${p.status===s?"selected":""}>${s}</option>`).join("")}</select></div><div class="field-group"><div class="field-label">Due Date</div><input class="wsav-input" type="date" id="dp-due" value="${p.due||""}" style="width:100%"/></div><div class="field-group"><div class="field-label">Allocated PM</div><div style="display:flex;align-items:center;gap:8px"><input class="wsav-input" type="text" id="dp-pm" value="${p.pm||''}" placeholder="e.g. JD" maxlength="2" style="width:64px;text-transform:uppercase;text-align:center;font-size:14px;font-weight:700;letter-spacing:0.05em"/><span style="font-size:11px;color:var(--wsav-text-muted)">Two-letter initials</span></div></div><div class="field-group"><button class="archive-action-btn" id="dp-archive">${p.archived?"Restore From Archive":"Move To Archive"}</button></div><div class="field-group"><button class="complete-all-btn" id="dp-complete-all">Mark All Tasks Complete</button></div><div class="section-head">Phases &amp; Tasks</div><div class="phases" id="dp-phases"></div><div class="add-phase-row" style="margin-top:10px"><input class="wsav-input" type="text" id="dp-new-phase" placeholder="Add A Phase…" style="flex:1;padding:6px 9px"/><button id="dp-add-phase">+ Phase</button></div><div class="notes-label">Notes</div><div class="notes-area"><textarea id="dp-notes" placeholder="Blockers, Decisions, Client Comms…">${p.notes||""}</textarea></div>`;
   document.getElementById("dp-name").oninput=function(){
     if(!this.value.trim())return;
     p.name=this.value;
@@ -795,6 +800,7 @@ function renderPanelContent(p){
   };
   document.getElementById("dp-status").onchange=function(){p.status=this.value;saveProject(p);renderStats();renderGrid();};
   document.getElementById("dp-due").onchange=function(){p.due=this.value;saveProject(p);renderGrid();};
+  document.getElementById("dp-pm").oninput=function(){p.pm=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2);this.value=p.pm;saveProject(p);renderGrid();};
   document.getElementById("dp-notes").oninput=function(){p.notes=this.value;saveProject(p);};
   document.getElementById("dp-archive").onclick=function(){p.archived=!p.archived;saveProject(p);renderStats();renderGrid();this.textContent=p.archived?"Restore From Archive":"Move To Archive";};
   document.getElementById("dp-complete-all").onclick=function(){
@@ -864,9 +870,10 @@ document.getElementById("new-proj-modal").onclick=function(e){if(e.target===this
 document.getElementById("np-create").onclick=function(){
   const name=document.getElementById("np-name").value.trim();if(!name)return;
   const num=document.getElementById("np-num").value.trim(),status=document.getElementById("np-status").value,due=document.getElementById("np-due").value;
-  const p={id:"p"+Date.now(),name,num,status,due,notes:"",archived:false,phases:JSON.parse(JSON.stringify(defaultPhases))};
+  const pm=document.getElementById("np-pm").value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2);
+  const p={id:"p"+Date.now(),name,num,status,due,notes:"",pm,archived:false,phases:JSON.parse(JSON.stringify(defaultPhases))};
   state.projects.unshift(p);
-  document.getElementById("np-name").value="";document.getElementById("np-num").value="";document.getElementById("np-due").value="";
+  document.getElementById("np-name").value="";document.getElementById("np-num").value="";document.getElementById("np-due").value="";document.getElementById("np-pm").value="";
   document.getElementById("new-proj-modal").classList.remove("open");
   saveProject(p);renderStats();renderGrid();
 };
@@ -929,7 +936,7 @@ document.getElementById("ex-generate").onclick=function(){
   if(inc.su){const dt=allTasks.filter(t=>t.done).length;html+=`<div class="sec"><div class="st">Executive Summary</div><div class="sg">${STATUSES.map(s=>`<div class="sc"><div class="sn" style="color:${sc(s)}">${byStatus[s]}</div><div class="sl">${s}</div></div>`).join("")}</div><div class="sw"><div class="swc"><div style="font-size:11px;color:#8aada9;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Overall Completion</div><div style="font-size:24px;font-weight:700;color:#D4A017;margin-bottom:6px">${overallPct}%</div>${bar(overallPct,"#D4A017")}<div style="font-size:11px;color:#8aada9;margin-top:6px">${dt} of ${allTasks.length} Tasks</div></div><div class="swc"><div style="font-size:11px;color:#8aada9;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Overdue</div><div style="font-size:24px;font-weight:700;color:${overdue.length>0?"#ff5555":"#6ee68b"};margin-bottom:6px">${overdue.length}</div><div style="font-size:11px;color:#8aada9">${overdue.length>0?overdue.map(p=>p.name).join(", "):"None"}</div></div><div class="swc"><div style="font-size:11px;color:#8aada9;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Due Within 7 Days</div><div style="font-size:24px;font-weight:700;color:${urgent.length>0?"#D4A017":"#6ee68b"};margin-bottom:6px">${urgent.length}</div><div style="font-size:11px;color:#8aada9">${urgent.length>0?urgent.map(p=>p.name).join(", "):"None"}</div></div></div></div>`;}
   if(inc.st){html+=`<div class="sec"><div class="st">Status Breakdown</div><div class="stg">${STATUSES.map(s=>{const c=byStatus[s],pct=total?Math.round(c/total*100):0;return`<div class="stc" style="background:${sb(s)};border-color:${sbd(s)}"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${sc(s)};margin-bottom:8px">${s}</div><div style="font-size:28px;font-weight:700;color:${sc(s)};margin-bottom:8px">${c}</div><div style="font-size:11px;opacity:0.7;color:${sc(s)};margin-bottom:8px">${pct}%</div>${bar(pct,sc(s))}</div>`;}).join("")}</div></div>`;}
   if(inc.ov&&(overdue.length||urgent.length)){html+=`<div class="sec"><div class="st">Attention Required</div><div class="ag"><div class="ab r"><div class="at">Overdue (${overdue.length})</div>${overdue.length?overdue.map(p=>`<div class="ai"><span>${p.name}</span><span class="ap">Overdue ${Math.abs(daysUntil(p.due))}d</span></div>`).join(""):`<div style="font-size:12px;color:#4a7570;padding:4px 0">None</div>`}</div><div class="ab a"><div class="at">Due Within 7 Days (${urgent.length})</div>${urgent.length?urgent.map(p=>`<div class="ai"><span>${p.name}</span><span class="ap">Due In ${daysUntil(p.due)}d</span></div>`).join(""):`<div style="font-size:12px;color:#4a7570;padding:4px 0">None</div>`}</div></div></div>`;}
-  if(inc.pr){const sorted=[...projects].sort((a,b)=>{const ad=a.due?new Date(a.due).getTime():Infinity,bd=b.due?new Date(b.due).getTime():Infinity;return ad-bd;});html+=`<div class="sec pb"><div class="st">Project Progress</div><table class="pt"><thead><tr><th>Project</th><th>#</th><th>Status</th><th>Progress</th><th>Due Date</th></tr></thead><tbody>${sorted.map(p=>{const pct=calcProgress(p),ds=dueStatus(p.due),days=daysUntil(p.due);let dh="—";if(p.due){if(ds==="overdue")dh=`<span class="tdo">⚠ ${formatDue(p.due)}</span>`;else if(ds==="urgent")dh=`<span class="tdu">⚡ ${formatDue(p.due)}</span>`;else dh=`<span class="tdn">${formatDue(p.due)}</span>`;}return`<tr><td class="tn">${p.name}</td><td class="tnu">${p.num||"—"}</td><td><span class="tb" style="background:${sb(p.status)};color:${sc(p.status)};border:1px solid ${sbd(p.status)}">${p.status}</span></td><td class="tbw"><div class="tp">${pct}%</div>${bar(pct,sc(p.status))}</td><td>${dh}</td></tr>`;}).join("")}</tbody></table></div>`;}
+  if(inc.pr){const sorted=[...projects].sort((a,b)=>{const ad=a.due?new Date(a.due).getTime():Infinity,bd=b.due?new Date(b.due).getTime():Infinity;return ad-bd;});html+=`<div class="sec pb"><div class="st">Project Progress</div><table class="pt"><thead><tr><th>Project</th><th>#</th><th>PM</th><th>Status</th><th>Progress</th><th>Due Date</th></tr></thead><tbody>${sorted.map(p=>{const pct=calcProgress(p),ds=dueStatus(p.due),days=daysUntil(p.due);let dh="—";if(p.due){if(ds==="overdue")dh=`<span class="tdo">⚠ ${formatDue(p.due)}</span>`;else if(ds==="urgent")dh=`<span class="tdu">⚡ ${formatDue(p.due)}</span>`;else dh=`<span class="tdn">${formatDue(p.due)}</span>`;}return`<tr><td class="tn">${p.name}</td><td class="tnu">${p.num||"—"}</td><td style="text-align:center;font-weight:700;color:#D4A017;font-size:12px">${p.pm||"—"}</td><td><span class="tb" style="background:${sb(p.status)};color:${sc(p.status)};border:1px solid ${sbd(p.status)}">${p.status}</span></td><td class="tbw"><div class="tp">${pct}%</div>${bar(pct,sc(p.status))}</td><td>${dh}</td></tr>`;}).join("")}</tbody></table></div>`;}
   if(inc.ta){html+=`<div class="sec pb"><div class="st">Task Completion By Project</div>`;projects.forEach(p=>{const allT=p.phases.flatMap(ph=>ph.tasks),doneT=allT.filter(t=>t.done).length,pct=allT.length?Math.round(doneT/allT.length*100):0;html+=`<div class="tpb"><div class="tpn"><span>${p.name}</span><span style="font-size:12px;color:#8aada9">${doneT}/${allT.length} — ${pct}%</span></div>`;p.phases.forEach(ph=>{if(!ph.tasks.length)return;html+=`<div class="tpl">${ph.name}</div>`;ph.tasks.forEach(t=>{html+=`<div class="tr2"><span class="tt ${t.done?"d":""}">${t.done?"✓":""}</span><span class="tl${t.done?" d":""}">${t.text}</span></div>`;});});html+=`</div>`;});html+=`</div>`;}
   if(inc.no){const wn=projects.filter(p=>p.notes&&p.notes.trim());if(wn.length){html+=`<div class="sec"><div class="st">Project Notes</div>`;wn.forEach(p=>{html+=`<div class="nb"><div class="nn">${p.name}</div><div class="nt">${p.notes.replace(/</g,"&lt;")}</div></div>`;});html+=`</div>`;}}
   html+=`<div class="rf"><div style="font-size:11px;color:#8aada9">Workspace Audio Visual — Confidential</div><div style="font-size:11px;color:#4a7570">Generated ${genDate}</div></div></div></body></html>`;
