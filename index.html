@@ -523,13 +523,15 @@ const spPost=(ep,b)=>spFetch(ep,{method:'POST',body:JSON.stringify(b)});
 const spMerge=(ep,b)=>spFetch(ep,{method:'POST',body:JSON.stringify(b),headers:{'X-HTTP-Method':'MERGE','IF-MATCH':'*'}});
 
 async function spLoadAll(){
-  const data=await spGet(`/web/lists/getbytitle('${encodeURIComponent(SP_LIST)}')/items?$select=Id,Title,ProjectNumber,Status,DueDate,Notes,Archived,PM,PhasesJSON&$top=500`);
+  const data=await spGet(`/web/lists/getbytitle('${encodeURIComponent(SP_LIST)}')/items?$select=Id,Title,ProjectNumber,Status,DueDate,Notes,Archived,PM,PhasesJSON,LastModifiedBy,LastModifiedAt&$top=500`);
   const map={};
   data.value.forEach(item=>{
     map[item.Title]={
       spId:item.Id,num:item.ProjectNumber||'',status:item.Status||'Planning',
       due:item.DueDate?item.DueDate.split('T')[0]:'',notes:item.Notes||'',pm:item.PM||'',
       archived:item.Archived||false,
+      lastModifiedBy:item.LastModifiedBy||'',
+      lastModifiedAt:item.LastModifiedAt||'',
       phases:item.PhasesJSON?JSON.parse(item.PhasesJSON):JSON.parse(JSON.stringify(defaultPhases))
     };
   });
@@ -539,7 +541,8 @@ async function spLoadAll(){
 async function spCreateItem(p){
   const result=await spPost(`/web/lists/getbytitle('${encodeURIComponent(SP_LIST)}')/items`,{
     Title:p.name,ProjectNumber:p.num,Status:p.status,DueDate:p.due||null,
-    Notes:p.notes,PM:p.pm||'',Archived:p.archived,PhasesJSON:JSON.stringify(p.phases)
+    Notes:p.notes,PM:p.pm||'',Archived:p.archived,PhasesJSON:JSON.stringify(p.phases),
+    LastModifiedBy:p.lastModifiedBy||'',LastModifiedAt:p.lastModifiedAt||''
   });
   return result.Id||result.id;
 }
@@ -552,7 +555,8 @@ async function spSaveItem(p){
   }
   await spMerge(`/web/lists/getbytitle('${encodeURIComponent(SP_LIST)}')/items(${p.spId})`,{
     ProjectNumber:p.num,Status:p.status,DueDate:p.due||null,
-    Notes:p.notes,PM:p.pm||'',Archived:p.archived,PhasesJSON:JSON.stringify(p.phases)
+    Notes:p.notes,PM:p.pm||'',Archived:p.archived,PhasesJSON:JSON.stringify(p.phases),
+    LastModifiedBy:p.lastModifiedBy||'',LastModifiedAt:p.lastModifiedAt||''
   });
 }
 
@@ -572,6 +576,8 @@ async function syncFromSP(){
       if(spData){
         p.spId=spData.spId;p.num=spData.num||p.num;p.status=spData.status;
         p.due=spData.due;p.notes=spData.notes;p.pm=spData.pm||p.pm||'';p.archived=spData.archived;
+        p.lastModifiedBy=spData.lastModifiedBy||p.lastModifiedBy||'';
+        p.lastModifiedAt=spData.lastModifiedAt||p.lastModifiedAt||'';
         p.phases=spData.phases;
       }
     });
@@ -580,7 +586,7 @@ async function syncFromSP(){
     spNames.forEach(name=>{
       if(!localNameSet.has(name.trim().toLowerCase())){
         const d=spMap[name];
-        state.projects.push({id:'p_sp_'+Date.now()+'_'+Math.random(),name,spId:d.spId,num:d.num,status:d.status,due:d.due,notes:d.notes,pm:d.pm||'',archived:d.archived,phases:d.phases});
+        state.projects.push({id:'p_sp_'+Date.now()+'_'+Math.random(),name,spId:d.spId,num:d.num,status:d.status,due:d.due,notes:d.notes,pm:d.pm||'',archived:d.archived,lastModifiedBy:d.lastModifiedBy||'',lastModifiedAt:d.lastModifiedAt||'',phases:d.phases});
         localNameSet.add(name.trim().toLowerCase());
       }
     });
@@ -604,6 +610,13 @@ async function syncFromSP(){
 let spSaveTimers={};
 function saveProject(p){
   if(!spAccount)return;
+  // Stamp who made the change and when
+  const displayName=spAccount.name||spAccount.username||'Unknown';
+  p.lastModifiedBy=displayName;
+  p.lastModifiedAt=new Date().toISOString();
+  // Update the panel note in real time if the panel is open for this project
+  const lmEl=document.getElementById('dp-last-modified');
+  if(lmEl){lmEl.innerHTML=`<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="#8aada9" stroke-width="1.4"/><path d="M2 13c0-3 2.5-5 6-5s6 2 6 5" stroke="#8aada9" stroke-width="1.4" stroke-linecap="round"/></svg><span>Last modified by <strong style="color:var(--wsav-offwhite)">${displayName.replace(/</g,'&lt;')}</strong> on ${formatDateTime(p.lastModifiedAt)}</span>`;}
   clearTimeout(spSaveTimers[p.id]);
   spSaveTimers[p.id]=setTimeout(async()=>{
     const dot=document.getElementById('sync-dot'),lbl=document.getElementById('sync-label');
@@ -636,6 +649,7 @@ function today(){const d=new Date();d.setHours(0,0,0,0);return d;}
 function dueStatus(due){if(!due)return"none";const t=today(),d=new Date(due);d.setHours(0,0,0,0);const diff=Math.floor((d-t)/86400000);if(diff<0)return"overdue";if(diff<=7)return"urgent";return"ok";}
 function daysUntil(due){if(!due)return null;const t=today(),d=new Date(due);d.setHours(0,0,0,0);return Math.floor((d-t)/86400000);}
 function formatDue(due){if(!due)return"";return new Date(due).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});}
+function formatDateTime(iso){if(!iso)return"";try{return new Date(iso).toLocaleString("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});}catch(e){return"";}}
 function calcProgress(proj){let t=0,d=0;proj.phases.forEach(ph=>ph.tasks.forEach(tk=>{t++;if(tk.done)d++;}));return t===0?0:Math.round(d/t*100);}
 function getCurrentPhase(proj){const name=STATUS_TO_PHASE[proj.status];return name?proj.phases.find(ph=>ph.name===name)||null:null;}
 
@@ -748,7 +762,7 @@ function openPanel(id){
 }
 function renderPanelContent(p){
   const c=document.getElementById("panel-content");
-  c.innerHTML=`<div class="field-group"><div class="field-label">Project Name</div><input class="wsav-input" type="text" id="dp-name" value="${p.name.replace(/"/g,'&quot;')}" style="width:100%"/></div><div class="field-group"><div class="field-label">Project Number</div><input class="wsav-input rename-num" type="text" id="dp-num" value="${p.num||''}" placeholder="e.g. 2442"/></div><div class="field-group"><div class="field-label">Status</div><select class="wsav-input" id="dp-status" style="width:100%">${STATUSES.map(s=>`<option ${p.status===s?"selected":""}>${s}</option>`).join("")}</select></div><div class="field-group"><div class="field-label">Due Date</div><input class="wsav-input" type="date" id="dp-due" value="${p.due||""}" style="width:100%"/></div><div class="field-group"><div class="field-label">Allocated PM</div><div style="display:flex;align-items:center;gap:8px"><input class="wsav-input" type="text" id="dp-pm" value="${p.pm||''}" placeholder="e.g. JD" maxlength="2" style="width:64px;text-transform:uppercase;text-align:center;font-size:14px;font-weight:700;letter-spacing:0.05em"/><span style="font-size:11px;color:var(--wsav-text-muted)">Two-letter initials</span></div></div><div class="field-group"><button class="archive-action-btn" id="dp-archive">${p.archived?"Restore From Archive":"Move To Archive"}</button></div><div class="field-group"><button class="complete-all-btn" id="dp-complete-all">Mark All Tasks Complete</button></div><div class="section-head">Phases &amp; Tasks</div><div class="phases" id="dp-phases"></div><div class="add-phase-row" style="margin-top:10px"><input class="wsav-input" type="text" id="dp-new-phase" placeholder="Add A Phase…" style="flex:1;padding:6px 9px"/><button id="dp-add-phase">+ Phase</button></div><div class="notes-label">Notes</div><div class="notes-area"><textarea id="dp-notes" placeholder="Blockers, Decisions, Client Comms…">${p.notes||""}</textarea></div><div style="margin-top:24px;border-top:1px solid rgba(139,0,0,0.25);padding-top:18px"><div style="font-size:11px;color:#8aada9;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:10px">Danger Zone</div><div id="dp-delete-wrap"><button id="dp-delete-reveal" style="background:none;border:1px solid rgba(139,0,0,0.4);border-radius:6px;color:#ff5555;font-size:12px;padding:7px 14px;cursor:pointer;width:100%;text-transform:uppercase;letter-spacing:0.04em;font-weight:600">Delete Project…</button></div></div>`;
+  c.innerHTML=`<div class="field-group"><div class="field-label">Project Name</div><input class="wsav-input" type="text" id="dp-name" value="${p.name.replace(/"/g,'&quot;')}" style="width:100%"/></div><div class="field-group"><div class="field-label">Project Number</div><input class="wsav-input rename-num" type="text" id="dp-num" value="${p.num||''}" placeholder="e.g. 2442"/></div><div class="field-group"><div class="field-label">Status</div><select class="wsav-input" id="dp-status" style="width:100%">${STATUSES.map(s=>`<option ${p.status===s?"selected":""}>${s}</option>`).join("")}</select></div><div class="field-group"><div class="field-label">Due Date</div><input class="wsav-input" type="date" id="dp-due" value="${p.due||""}" style="width:100%"/></div><div class="field-group"><div class="field-label">Allocated PM</div><div style="display:flex;align-items:center;gap:8px"><input class="wsav-input" type="text" id="dp-pm" value="${p.pm||''}" placeholder="e.g. JD" maxlength="2" style="width:64px;text-transform:uppercase;text-align:center;font-size:14px;font-weight:700;letter-spacing:0.05em"/><span style="font-size:11px;color:var(--wsav-text-muted)">Two-letter initials</span></div></div><div class="field-group"><button class="archive-action-btn" id="dp-archive">${p.archived?"Restore From Archive":"Move To Archive"}</button></div><div class="field-group"><button class="complete-all-btn" id="dp-complete-all">Mark All Tasks Complete</button></div><div class="section-head">Phases &amp; Tasks</div><div class="phases" id="dp-phases"></div><div class="add-phase-row" style="margin-top:10px"><input class="wsav-input" type="text" id="dp-new-phase" placeholder="Add A Phase…" style="flex:1;padding:6px 9px"/><button id="dp-add-phase">+ Phase</button></div><div class="notes-label">Notes</div><div class="notes-area"><textarea id="dp-notes" placeholder="Blockers, Decisions, Client Comms…">${p.notes||""}</textarea></div><div style="margin-top:20px;border-top:1px solid var(--wsav-border);padding-top:14px"><div id="dp-last-modified" style="font-size:11px;color:var(--wsav-text-muted);display:flex;align-items:center;gap:6px">${p.lastModifiedBy?`<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="#8aada9" stroke-width="1.4"/><path d="M2 13c0-3 2.5-5 6-5s6 2 6 5" stroke="#8aada9" stroke-width="1.4" stroke-linecap="round"/></svg><span>Last modified by <strong style="color:var(--wsav-offwhite)">${p.lastModifiedBy.replace(/</g,'&lt;')}</strong>${p.lastModifiedAt?' on '+formatDateTime(p.lastModifiedAt):''}</span>`:'<span style="font-style:italic">No changes recorded yet</span>'}</div></div><div style="margin-top:16px;border-top:1px solid rgba(139,0,0,0.25);padding-top:18px"><div style="font-size:11px;color:#8aada9;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:10px">Danger Zone</div><div id="dp-delete-wrap"><button id="dp-delete-reveal" style="background:none;border:1px solid rgba(139,0,0,0.4);border-radius:6px;color:#ff5555;font-size:12px;padding:7px 14px;cursor:pointer;width:100%;text-transform:uppercase;letter-spacing:0.04em;font-weight:600">Delete Project…</button></div></div>`;
   document.getElementById("dp-name").oninput=function(){
     if(!this.value.trim())return;
     p.name=this.value;
