@@ -554,7 +554,7 @@ async function spSaveItem(p){
     return;
   }
   await spMerge(`/web/lists/getbytitle('${encodeURIComponent(SP_LIST)}')/items(${p.spId})`,{
-    ProjectNumber:p.num,Status:p.status,DueDate:p.due||null,
+    Title:p.name,ProjectNumber:p.num,Status:p.status,DueDate:p.due||null,
     Notes:p.notes,PM:p.pm||'',Archived:p.archived,PhasesJSON:JSON.stringify(p.phases),
     LastModifiedBy:p.lastModifiedBy||'',LastModifiedAt:p.lastModifiedAt||''
   });
@@ -578,9 +578,16 @@ async function syncFromSP(){
   try{
     const spMap=await spLoadAll();
     const spNames=Object.keys(spMap);
-    // Update existing local projects with SP data (case-insensitive name match)
+    // Build a secondary lookup by spId for robust matching after renames
+    const spMapById={};
+    Object.values(spMap).forEach(d=>{if(d.spId)spMapById[d.spId]=d;});
+    // Update existing local projects with SP data — skip any with a pending save in flight
     state.projects.forEach(p=>{
-      const spData=spMap[p.name]||spMap[Object.keys(spMap).find(k=>k.trim().toLowerCase()===p.name.trim().toLowerCase())];
+      if(spSaveTimers[p.id])return; // unsaved local change in progress — don't overwrite
+      const spData=
+        (p.spId&&spMapById[p.spId]) ||
+        spMap[p.name] ||
+        spMap[Object.keys(spMap).find(k=>k.trim().toLowerCase()===p.name.trim().toLowerCase())];
       if(spData){
         p.spId=spData.spId;p.num=spData.num||p.num;p.status=spData.status;
         p.due=spData.due;p.notes=spData.notes;p.pm=spData.pm||p.pm||'';p.archived=spData.archived;
@@ -589,11 +596,12 @@ async function syncFromSP(){
         p.phases=spData.phases;
       }
     });
-    // Add any SP projects not already in local (case-insensitive)
+    // Add any SP projects not already in local — skip any already matched by spId above
+    const localSpIds=new Set(state.projects.map(p=>p.spId).filter(Boolean));
     const localNameSet=new Set(state.projects.map(p=>p.name.trim().toLowerCase()));
     spNames.forEach(name=>{
-      if(!localNameSet.has(name.trim().toLowerCase())){
-        const d=spMap[name];
+      const d=spMap[name];
+      if(!localSpIds.has(d.spId)&&!localNameSet.has(name.trim().toLowerCase())){
         state.projects.push({id:'p_sp_'+Date.now()+'_'+Math.random(),name,spId:d.spId,num:d.num,status:d.status,due:d.due,notes:d.notes,pm:d.pm||'',archived:d.archived,lastModifiedBy:d.lastModifiedBy||'',lastModifiedAt:d.lastModifiedAt||'',phases:d.phases});
         localNameSet.add(name.trim().toLowerCase());
       }
@@ -905,7 +913,7 @@ document.getElementById("np-create").onclick=function(){
   const name=document.getElementById("np-name").value.trim();if(!name)return;
   const num=document.getElementById("np-num").value.trim(),status=document.getElementById("np-status").value,due=document.getElementById("np-due").value;
   const pm=document.getElementById("np-pm").value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2);
-  const p={id:"p"+Date.now(),name,num,status,due,notes:"",pm,archived:false,phases:JSON.parse(JSON.stringify(defaultPhases))};
+  const p={id:"p"+Date.now(),name,num,status,due,notes:"",pm,archived:false,lastModifiedBy:'',lastModifiedAt:'',phases:JSON.parse(JSON.stringify(defaultPhases))};
   state.projects.unshift(p);
   document.getElementById("np-name").value="";document.getElementById("np-num").value="";document.getElementById("np-due").value="";document.getElementById("np-pm").value="";
   document.getElementById("new-proj-modal").classList.remove("open");
