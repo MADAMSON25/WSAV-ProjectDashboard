@@ -435,7 +435,7 @@ const STATUS_TO_PHASE={"Planning":"Planning","Scheduled":"Scheduled","In Progres
 const STATUS_CLASS={"Planning":"st-planning","Scheduled":"st-scheduled","In Progress":"st-inprogress","Snagging":"st-snagging","Complete":"st-complete"};
 function pbClass(s,u,o){if(o||u)return"pb-urgent";return{"Planning":"pb-purple","Scheduled":"pb-blue","In Progress":"pb-gold","Snagging":"pb-red","Complete":"pb-green"}[s]||"pb-gray";}
 const defaultPhases=[
-  {name:"Planning",tasks:[{text:"Equipment Ordered",done:false},{text:"Drawings Requested",done:false},{text:"Drawings Complete",done:false}]},
+  {name:"Planning",tasks:[{text:"Equipment Ordered",done:false},{text:"Equipment Received",done:false},{text:"Drawings Requested",done:false},{text:"Drawings Complete",done:false}]},
   {name:"Scheduled",tasks:[{text:"Consumables Picked",done:false},{text:"RAMS Complete",done:false}]},
   {name:"Installation",tasks:[{text:"First Fix",done:false},{text:"Second Fix",done:false},{text:"Commissioning",done:false},{text:"Test Call Complete (If Applicable)",done:false},{text:"Completion Photos Uploaded",done:false}]},
   {name:"Snagging",tasks:[{text:"Snag List Raised",done:false},{text:"Snags Resolved",done:false}]},
@@ -443,8 +443,26 @@ const defaultPhases=[
 ];
 
 /* ═══════════════════════════════════════════════════
-   MSAL + SHAREPOINT
+   MIGRATIONS — run after sync to patch existing SP data
    ═══════════════════════════════════════════════════ */
+async function runMigrations(){
+  const toSave=[];
+  state.projects.forEach(p=>{
+    const planning=p.phases.find(ph=>ph.name==='Planning');
+    if(!planning)return;
+    const hasOrdered=planning.tasks.some(t=>t.text==='Equipment Ordered');
+    const hasReceived=planning.tasks.some(t=>t.text==='Equipment Received');
+    if(hasOrdered&&!hasReceived){
+      const orderedIdx=planning.tasks.findIndex(t=>t.text==='Equipment Ordered');
+      planning.tasks.splice(orderedIdx+1,0,{text:'Equipment Received',done:false,risk:false});
+      toSave.push(p);
+    }
+  });
+  for(const p of toSave){
+    try{await spSaveItem(p);}catch(e){console.warn('Migration save failed for',p.name,e);}
+  }
+  if(toSave.length>0)console.log(`Migration: added "Equipment Received" to ${toSave.length} project(s)`);
+}
 let msalInstance=null, spAccount=null, spToken=null;
 
 async function initMSAL(){
@@ -613,6 +631,7 @@ async function syncFromSP(){
     }
     overlay.classList.add('hidden');
     dot.className='sync-dot';lbl.textContent='SharePoint Synced';
+    await runMigrations();
     showSPBanner(`SharePoint synced — ${state.projects.length} projects loaded`);
     return true;
   }catch(e){
