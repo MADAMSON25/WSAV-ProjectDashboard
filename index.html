@@ -579,11 +579,23 @@ async function spSaveItem(p){
 }
 
 async function spDeleteItem(p){
-  if(!p.spId)return; // never reached SP, nothing to delete there
-  await spFetch(`/web/lists/getbytitle('${encodeURIComponent(SP_LIST)}')/items(${p.spId})`,{
+  if(!p.spId)return;
+  const r=await fetch(`${SP_SITE}/_api/web/lists/getbytitle('${encodeURIComponent(SP_LIST)}')/items(${p.spId})`,{
     method:'POST',
-    headers:{'X-HTTP-Method':'DELETE','IF-MATCH':'*'}
+    headers:{
+      'Accept':'application/json;odata=nometadata',
+      'Content-Type':'application/json;odata=nometadata',
+      'Authorization':`Bearer ${spToken}`,
+      'X-HTTP-Method':'DELETE',
+      'IF-MATCH':'*'
+    }
   });
+  if(!r.ok&&r.status!==404){
+    const t=await r.text().catch(()=>r.statusText);
+    throw new Error(`${r.status}: ${t.substring(0,200)}`);
+  }
+  // 404 = already gone, treat as success — caller handles this
+  if(!r.ok)throw new Error(`404: Item does not exist in SharePoint`);
 }
 
 /* Merge SP data on top of local state — SP wins for status/tasks/notes, local wins for projects not yet in SP */
@@ -847,13 +859,18 @@ function renderPanelContent(p){
       try{
         await spDeleteItem(p);
       }catch(e){
-        confirmBtn.disabled=false;confirmBtn.textContent='Delete Project';
-        const errEl=document.createElement('div');
-        errEl.style.cssText='font-size:11px;color:#ff8a80;margin-top:8px;line-height:1.5';
-        errEl.textContent='SharePoint delete failed: '+e.message+' — project was not deleted.';
-        confirmBtn.parentElement.after(errEl);
-        console.warn('SP delete failed:',e);
-        return;
+        // 404 means item doesn't exist in SP (already deleted or never synced) — safe to remove locally
+        const is404=e.message&&e.message.includes('404');
+        if(!is404){
+          confirmBtn.disabled=false;confirmBtn.textContent='Delete Project';
+          const errEl=document.createElement('div');
+          errEl.style.cssText='font-size:11px;color:#ff8a80;margin-top:8px;line-height:1.5';
+          errEl.textContent='SharePoint delete failed: '+e.message+' — project was not deleted.';
+          confirmBtn.parentElement.after(errEl);
+          console.warn('SP delete failed:',e);
+          return;
+        }
+        console.warn('SP item not found (404) — removing locally anyway:',p.name);
       }
       const idx=state.projects.findIndex(x=>x.id===p.id);
       if(idx>-1)state.projects.splice(idx,1);
