@@ -852,20 +852,19 @@ async function spSave(req){
 /* ─── Debounced save ─── */
 const saveTimers={};
 function saveRequest(req){
-  if(!spAccount) return;
-  const name=spAccount.name||spAccount.username||'Unknown';
+  const name=spAccount?(spAccount.name||spAccount.username||'Unknown'):'Local';
   req.lastModifiedBy=name;
   req.lastModifiedAt=new Date().toISOString();
   // Update last-modified line in panel if open
   const lmEl=document.getElementById('dp-last-modified');
   if(lmEl) lmEl.innerHTML=modifiedHtml(req);
   saveLocal();
-  if(!spEnabled) return;
+  if(!spEnabled||!spAccount) return;
   clearTimeout(saveTimers[req.spId]);
   saveTimers[req.spId]=setTimeout(async()=>{
     setSyncing(true,'Saving…');
     try{ await spSave(req); setSyncing(false,'SharePoint Synced'); }
-    catch(e){ setSyncing(false,'Save Error','error'); console.warn('SP save failed:',e); }
+    catch(e){ setSyncing(false,'Saved locally',''); console.warn('SP save failed:',e); }
   },700);
 }
 
@@ -1364,12 +1363,6 @@ function renderPanelContent(r){
         <div class="panel-field-label" style="margin-bottom:5px">Paste a new folder link to replace the current one</div>
         <div style="font-size:11px;color:#4a7570;line-height:1.5;margin-bottom:6px">⚠ Link must be a SharePoint URL — not a local or network folder path.</div>
         <input class="panel-input" type="url" id="dp-folder-url" value="${esc(r.folderUrl||'')}" placeholder="https://workspaceav1.sharepoint.com/…"/>
-      </div>
-    </div>
-      <div id="panel-files-list">
-        <div style="font-size:12px;color:var(--wsav-text-muted);display:flex;align-items:center;gap:6px">
-          <span class="sync-dot syncing" style="flex-shrink:0"></span> Loading files…
-        </div>
       </div>
     </div>
 
