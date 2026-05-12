@@ -688,6 +688,48 @@ function showSPBanner(msg,isError=false){
 }
 
 /* ═══════════════════════════════════════════════════
+   EQUIPMENT RECEIVED — EMAIL TRIGGER
+   ═══════════════════════════════════════════════════ */
+const EQUIPMENT_RECEIVED_EMAIL = {
+  to: 'warehouse@workspaceav.co.uk',
+  cc: 'engineering@workspaceav.com',
+  subject: (projectName, projectNum) =>
+    `Equipment Received${projectNum ? ' — Job #' + projectNum : ''}: ${projectName}`,
+  body: (projectName, projectNum, pm, due) => {
+    const dueFmt = due
+      ? new Date(due).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+      : 'Not set';
+    const lines = [
+      `Hi,`,
+      ``,
+      `This is an automated notification from the Workspace AV Project Dashboard.`,
+      ``,
+      `Equipment has been marked as received for the following project:`,
+      ``,
+      `  Project:       ${projectName}`,
+      projectNum ? `  Job No:        ${projectNum}` : null,
+      pm         ? `  PM:            ${pm}`         : null,
+      `  Install Date:  ${dueFmt}`,
+      ``,
+      `Please ensure the equipment is booked in and stored appropriately.`,
+      ``,
+      `Regards,`,
+      `Workspace AV Dashboard`
+    ].filter(l => l !== null).join('\r\n');
+    return lines;
+  }
+};
+
+function triggerEquipmentReceivedEmail(p) {
+  const cfg = EQUIPMENT_RECEIVED_EMAIL;
+  const subject = encodeURIComponent(cfg.subject(p.name, p.num));
+  const body    = encodeURIComponent(cfg.body(p.name, p.num, p.pm, p.due));
+  const cc      = cfg.cc ? `&cc=${encodeURIComponent(cfg.cc)}` : '';
+  const mailto  = `mailto:${encodeURIComponent(cfg.to)}?subject=${subject}${cc}&body=${body}`;
+  window.location.href = mailto;
+}
+
+/* ═══════════════════════════════════════════════════
    STATE
    ═══════════════════════════════════════════════════ */
 const state={projects:[],filter:"all",search:"",archiveOpen:false,sortDir:"asc",sortMode:"due-asc"};
@@ -767,7 +809,7 @@ function makeCard(p,isArchive){
       const allDone=phase.tasks.length>0&&phase.tasks.every(t=>t.done);
       td.innerHTML=`<div class="card-tasks-label">${phase.name} Stage</div>`;
       if(allDone){td.innerHTML+=`<div class="card-all-done">✓ All Tasks Complete</div>`;}
-      else{phase.tasks.forEach((t,ti)=>{const row=document.createElement("div");row.className="card-task-item";const cb=document.createElement("div");cb.className="card-task-cb"+(t.done?" checked":"");cb.dataset.pid=p.id;cb.dataset.pname=phase.name;cb.dataset.ti=ti;const tx=document.createElement("span");tx.className="card-task-text"+(t.done?" done":"");tx.textContent=t.text;cb.addEventListener("click",function(e){e.stopPropagation();const proj=state.projects.find(x=>x.id===this.dataset.pid);const ph=proj.phases.find(x=>x.name===this.dataset.pname);ph.tasks[parseInt(this.dataset.ti)].done=!ph.tasks[parseInt(this.dataset.ti)].done;saveProject(proj);renderStats();renderGrid();});row.appendChild(cb);row.appendChild(tx);if(t.risk&&!t.done){const rk=document.createElement("span");rk.className="card-task-risk";rk.textContent="⚠ Risk";row.appendChild(rk);}td.appendChild(row);});}
+      else{phase.tasks.forEach((t,ti)=>{const row=document.createElement("div");row.className="card-task-item";const cb=document.createElement("div");cb.className="card-task-cb"+(t.done?" checked":"");cb.dataset.pid=p.id;cb.dataset.pname=phase.name;cb.dataset.ti=ti;const tx=document.createElement("span");tx.className="card-task-text"+(t.done?" done":"");tx.textContent=t.text;cb.addEventListener("click",function(e){e.stopPropagation();const proj=state.projects.find(x=>x.id===this.dataset.pid);const ph=proj.phases.find(x=>x.name===this.dataset.pname);const taskIdx=parseInt(this.dataset.ti);const wasUnchecked=!ph.tasks[taskIdx].done;ph.tasks[taskIdx].done=wasUnchecked;saveProject(proj);renderStats();renderGrid();if(wasUnchecked&&ph.tasks[taskIdx].text==='Equipment Received'){triggerEquipmentReceivedEmail(proj);}});row.appendChild(cb);row.appendChild(tx);if(t.risk&&!t.done){const rk=document.createElement("span");rk.className="card-task-risk";rk.textContent="⚠ Risk";row.appendChild(rk);}td.appendChild(row);});}
       card.appendChild(td);
     }
   }
@@ -910,7 +952,7 @@ function renderTasksInPanel(p,phi){
     span.className="task-text"+(t.done?" done":"");
     span.textContent=t.text;
     lbl.appendChild(cb);lbl.appendChild(span);
-    cb.onchange=function(){p.phases[phi].tasks[ti].done=this.checked;saveProject(p);renderPhasesInPanel(p);renderGrid();renderStats();};
+    cb.onchange=function(){const wasUnchecked=!p.phases[phi].tasks[ti].done;p.phases[phi].tasks[ti].done=this.checked;saveProject(p);renderPhasesInPanel(p);renderGrid();renderStats();if(wasUnchecked&&this.checked&&t.text==='Equipment Received'){triggerEquipmentReceivedEmail(p);}};
     li.appendChild(lbl);
     const riskBtn=document.createElement("button");
     riskBtn.type="button";
