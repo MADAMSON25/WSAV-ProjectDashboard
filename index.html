@@ -6,16 +6,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Workspace AV — Project Status Dashboard</title>
 <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --wsav-dark:#0D3B35;--wsav-dark2:#0a2e29;--wsav-dark3:#082520;
-  --wsav-gold:#D4A017;--wsav-gold-light:#e8b82a;--wsav-gold-muted:#a07c10;
-  --wsav-white:#ffffff;--wsav-offwhite:#e8ede8;--wsav-text-muted:#8aada9;
+  --wsav-dark:#013334;--wsav-dark2:#021E1E;--wsav-dark3:#021414;
+  --wsav-gold:#DDB357;--wsav-gold-light:#FFC552;--wsav-gold-muted:#b8893a;
+  --wsav-white:#ffffff;--wsav-offwhite:#F2EEE7;--wsav-text-muted:#8aada9;
   --wsav-border:#1a5048;--wsav-border-light:#2a6058;
-  --wsav-card:#0f453e;--wsav-card2:#133d37;--wsav-input:#0a2e29;
+  --wsav-card:#0a2a2a;--wsav-card2:#0d3030;--wsav-input:#021E1E;
 }
-html,body{width:100%;min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;background:var(--wsav-dark3);color:var(--wsav-white)}
+html,body{width:100%;min-height:100vh;font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--wsav-dark3);color:var(--wsav-white)}
 .dash{width:100%;min-height:100vh;margin:0 auto;display:flex;flex-direction:column}
 
 /* Header */
@@ -1074,7 +1077,7 @@ document.getElementById("ex-generate").onclick=function(){
   if(inc.pr){const sorted=[...projects].sort((a,b)=>{const ad=a.due?new Date(a.due).getTime():Infinity,bd=b.due?new Date(b.due).getTime():Infinity;return ad-bd;});html+=`<div class="sec pb"><div class="st">Project Progress</div><table class="pt"><thead><tr><th>Project</th><th>#</th><th>PM</th><th>Status</th><th>Progress</th><th>Due Date</th></tr></thead><tbody>${sorted.map(p=>{const pct=calcProgress(p),ds=dueStatus(p.due),days=daysUntil(p.due);let dh="—";if(p.due){if(ds==="overdue")dh=`<span class="tdo">⚠ ${formatDue(p.due)}</span>`;else if(ds==="urgent")dh=`<span class="tdu">⚡ ${formatDue(p.due)}</span>`;else dh=`<span class="tdn">${formatDue(p.due)}</span>`;}return`<tr><td class="tn">${p.name}</td><td class="tnu">${p.num||"—"}</td><td style="text-align:center;font-weight:700;color:#D4A017;font-size:12px">${p.pm||"—"}</td><td><span class="tb" style="background:${sb(p.status)};color:${sc(p.status)};border:1px solid ${sbd(p.status)}">${p.status}</span></td><td class="tbw"><div class="tp">${pct}%</div>${bar(pct,sc(p.status))}</td><td>${dh}</td></tr>`;}).join("")}</tbody></table></div>`;}
   if(inc.ta){html+=`<div class="sec pb"><div class="st">Task Completion By Project</div>`;projects.forEach(p=>{const allT=p.phases.flatMap(ph=>ph.tasks),doneT=allT.filter(t=>t.done).length,pct=allT.length?Math.round(doneT/allT.length*100):0;html+=`<div class="tpb"><div class="tpn"><span>${p.name}</span><span style="font-size:12px;color:#8aada9">${doneT}/${allT.length} — ${pct}%</span></div>`;p.phases.forEach(ph=>{if(!ph.tasks.length)return;html+=`<div class="tpl">${ph.name}</div>`;ph.tasks.forEach(t=>{html+=`<div class="tr2"><span class="tt ${t.done?"d":""}">${t.done?"✓":""}</span><span class="tl${t.done?" d":""}">${t.text}</span></div>`;});});html+=`</div>`;});html+=`</div>`;}
   if(inc.no){const wn=projects.filter(p=>p.notes&&p.notes.trim());if(wn.length){html+=`<div class="sec"><div class="st">Project Notes</div>`;wn.forEach(p=>{html+=`<div class="nb"><div class="nn">${p.name}</div><div class="nt">${p.notes.replace(/</g,"&lt;")}</div></div>`;});html+=`</div>`;}}
-  html+=`<div class="rf"><div style="font-size:11px;color:#8aada9">Workspace Audio Visual — Confidential</div><div style="font-size:11px;color:#4a7570">Generated ${genDate}</div></div></div></body></html>`;
+  html+=`<div class="rf"><div style="font-size:11px;color:#8aada9">Workspace AV · Workspace Audio Visual Ltd · Registered office: 167–169 Great Portland Street, London, W1W 5PF · Company No. 13312342 · VAT GB 380641989 · info@workspaceav.com · workspaceav.com</div><div style="font-size:11px;color:#4a7570;margin-top:4px">Confidential · Generated ${genDate}</div></div></div></body></html>`;
   const blob=new Blob([html],{type:"text/html"});window.open(URL.createObjectURL(blob),"_blank");
   document.getElementById("export-modal").classList.remove("open");
 };
