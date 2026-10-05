@@ -444,6 +444,8 @@ const RAMS_TYPE_FILTER = true;                    // set false if using separate
 const ramsF=(type,f)=>[RAMS_TYPE_FILTER?`ItemType eq '${type}'`:'',f].filter(Boolean).join(' and ');
 const RAMS_PHASE       = 'Scheduled';             // RAMS live inside this phase
 const RAMS_TASK        = 'RAMS Complete';
+const RFI_TASK         = 'Room Account RFI';       // opens the RFI creator in the RAMS Builder
+const NEW_PLANNING_TASKS = ['Room Account RFI','PlanRadar Project Creation'];  // added to existing projects still in Planning
 
 /* ═══════════════════════════════════════════════════
    DATA DEFAULTS
@@ -453,7 +455,7 @@ const STATUS_TO_PHASE={"Planning":"Planning","Scheduled":"Scheduled","In Progres
 const STATUS_CLASS={"Planning":"st-planning","Scheduled":"st-scheduled","In Progress":"st-inprogress","Snagging":"st-snagging","Handover":"st-handover","Complete":"st-complete"};
 function pbClass(s,u,o){if(o||u)return"pb-urgent";return{"Planning":"pb-purple","Scheduled":"pb-blue","In Progress":"pb-gold","Snagging":"pb-red","Handover":"pb-cyan","Complete":"pb-green"}[s]||"pb-gray";}
 const defaultPhases=[
-  {name:"Planning",tasks:[{text:"Equipment Ordered",done:false},{text:"Equipment Received",done:false},{text:"Drawings Requested",done:false},{text:"Drawings Complete",done:false}]},
+  {name:"Planning",tasks:[{text:"Equipment Ordered",done:false},{text:"Equipment Received",done:false},{text:"Drawings Requested",done:false},{text:"Drawings Complete",done:false},{text:"Room Account RFI",done:false},{text:"PlanRadar Project Creation",done:false}]},
   {name:"Scheduled",tasks:[{text:"Consumables Picked",done:false},{text:"RAMS Complete",done:false}]},
   {name:"Installation",tasks:[{text:"First Fix",done:false},{text:"Second Fix",done:false},{text:"Commissioning",done:false},{text:"Test Call Complete (If Applicable)",done:false},{text:"Completion Photos Uploaded",done:false}]},
   {name:"Snagging",tasks:[{text:"Snag List Raised",done:false},{text:"Snags Resolved",done:false}]},
@@ -568,7 +570,7 @@ async function spLoadAll(){
       archived:item.Archived||false,
       lastModifiedBy:item.LastModifiedBy||'',
       lastModifiedAt:item.LastModifiedAt||'',
-      phases:item.PhasesJSON?JSON.parse(item.PhasesJSON):JSON.parse(JSON.stringify(defaultPhases))
+      phases:addPlanningTasks(item.PhasesJSON?JSON.parse(item.PhasesJSON):JSON.parse(JSON.stringify(defaultPhases)),item.Status,item.Archived)
     };
   });
   return map;
@@ -828,7 +830,7 @@ function makeCard(p,isArchive){
       const allDone=phase.tasks.length>0&&phase.tasks.every(t=>t.done);
       td.innerHTML=`<div class="card-tasks-label">${phase.name} Stage</div>`;
       if(allDone){td.innerHTML+=`<div class="card-all-done">✓ All Tasks Complete</div>`;}
-      else{phase.tasks.forEach((t,ti)=>{const row=document.createElement("div");row.className="card-task-item";const cb=document.createElement("div");cb.className="card-task-cb"+(t.done?" checked":"");cb.dataset.pid=p.id;cb.dataset.pname=phase.name;cb.dataset.ti=ti;const tx=document.createElement("span");tx.className="card-task-text"+(t.done?" done":"");tx.textContent=t.text;cb.addEventListener("click",function(e){e.stopPropagation();const proj=state.projects.find(x=>x.id===this.dataset.pid);const ph=proj.phases.find(x=>x.name===this.dataset.pname);const taskIdx=parseInt(this.dataset.ti);const wasUnchecked=!ph.tasks[taskIdx].done;ph.tasks[taskIdx].done=wasUnchecked;saveProject(proj);renderStats();renderGrid();if(wasUnchecked&&ph.tasks[taskIdx].text==='Equipment Received'){triggerEquipmentReceivedEmail(proj);}});row.appendChild(cb);row.appendChild(tx);if(t.text===RAMS_TASK&&p.spId){const rp=ramsPill(p.spId);if(rp)row.appendChild(rp);}if(t.risk&&!t.done){const rk=document.createElement("span");rk.className="card-task-risk";rk.textContent="⚠ Risk";row.appendChild(rk);}td.appendChild(row);});}
+      else{phase.tasks.forEach((t,ti)=>{const row=document.createElement("div");row.className="card-task-item";const cb=document.createElement("div");cb.className="card-task-cb"+(t.done?" checked":"");cb.dataset.pid=p.id;cb.dataset.pname=phase.name;cb.dataset.ti=ti;const tx=document.createElement("span");tx.className="card-task-text"+(t.done?" done":"");tx.textContent=t.text;cb.addEventListener("click",function(e){e.stopPropagation();const proj=state.projects.find(x=>x.id===this.dataset.pid);const ph=proj.phases.find(x=>x.name===this.dataset.pname);const taskIdx=parseInt(this.dataset.ti);const wasUnchecked=!ph.tasks[taskIdx].done;ph.tasks[taskIdx].done=wasUnchecked;saveProject(proj);renderStats();renderGrid();if(wasUnchecked&&ph.tasks[taskIdx].text==='Equipment Received'){triggerEquipmentReceivedEmail(proj);}});row.appendChild(cb);row.appendChild(tx);if(t.text===RAMS_TASK&&p.spId){const rp=ramsPill(p.spId);if(rp)row.appendChild(rp);}if(t.text===RFI_TASK&&p.spId){const fp=rfiPill(p.spId);if(fp)row.appendChild(fp);}if(t.risk&&!t.done){const rk=document.createElement("span");rk.className="card-task-risk";rk.textContent="⚠ Risk";row.appendChild(rk);}td.appendChild(row);});}
       card.appendChild(td);
     }
   }
@@ -964,6 +966,13 @@ function renderPhasesInPanel(p){
   });
   if(document.getElementById('dp-rams'))renderRamsInPanel(p);
 }
+function addPlanningTasks(phases,status,archived){
+  if(archived||status!=='Planning') return phases;
+  const pl=phases.find(x=>x.name==='Planning'); if(!pl) return phases;
+  pl.tasks=pl.tasks||[];
+  NEW_PLANNING_TASKS.forEach(t=>{if(!pl.tasks.some(x=>(x.text||'').trim().toLowerCase()===t.toLowerCase()))pl.tasks.push({text:t,done:false});});
+  return phases;
+}
 function renderTasksInPanel(p,phi){
   const ul=document.getElementById(`dpt-${phi}`);if(!ul)return;ul.innerHTML="";
   p.phases[phi].tasks.forEach((t,ti)=>{
@@ -979,6 +988,8 @@ function renderTasksInPanel(p,phi){
     lbl.appendChild(cb);lbl.appendChild(span);
     cb.onchange=function(){const wasUnchecked=!p.phases[phi].tasks[ti].done;p.phases[phi].tasks[ti].done=this.checked;saveProject(p);renderPhasesInPanel(p);renderGrid();renderStats();if(wasUnchecked&&this.checked&&t.text==='Equipment Received'){triggerEquipmentReceivedEmail(p);}};
     li.appendChild(lbl);
+    if(t.text===RFI_TASK&&p.spId){const rp=rfiPill(p.spId);if(rp)li.appendChild(rp);const a=document.createElement("a");a.href=`${RAMS_URL}?rfi=${p.spId}`;a.target="_blank";a.rel="noopener";a.textContent="Open";
+      a.style.cssText="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--wsav-gold);border:1px solid var(--wsav-gold-muted);border-radius:4px;padding:2px 8px;text-decoration:none;flex-shrink:0";li.appendChild(a);}
     const riskBtn=document.createElement("button");
     riskBtn.type="button";
     riskBtn.className="task-risk-btn"+(t.risk?" risk-on":"");
@@ -1123,9 +1134,11 @@ async function renderRamsInPanel(p){
 
 
 /* RAMS summary for cards — one query per sync */
-let ramsCache=null;
+let ramsCache=null, rfiCache=null;
 async function loadRamsCache(){
   if(!spAccount)return;
+  try{const f=await spGet(`/web/lists/getbytitle('${encodeURIComponent(RAMS_LIST)}')/items?$select=Id,DashboardProjectId,Status,Modified&$filter=ItemType eq 'RFI'&$top=1000`);
+    rfiCache={};(f.value||[]).filter(i=>i.DashboardProjectId).forEach(i=>{const c=rfiCache[i.DashboardProjectId];if(!c||String(i.Modified)>String(c.mod))rfiCache[i.DashboardProjectId]={status:i.Status,mod:i.Modified};});}catch(e){rfiCache=null;}
   try{
     const r=await spGet(`/web/lists/getbytitle('${encodeURIComponent(RAMS_LIST)}')/items?$select=Id,DashboardProjectId,Status,Revision,RequestedEmails,Modified${RAMS_TYPE_FILTER?`&$filter=${ramsF('RAMS','')}`:''}&$top=2000`);
     let sg={value:[]};try{sg=await spGet(`/web/lists/getbytitle('${encodeURIComponent(RAMS_SIG_LIST)}')/items?$select=RamsItemId,Revision,SignerEmail${RAMS_TYPE_FILTER?`&$filter=${ramsF('Signature','')}`:''}&$top=5000`);}catch(e){}
@@ -1137,6 +1150,15 @@ async function loadRamsCache(){
       (ramsCache[i.DashboardProjectId]=ramsCache[i.DashboardProjectId]||[]).push({id:i.Id,status:i.Status,req:req.length,signed:req.filter(e=>got.has(e)).length,mod:i.Modified});
     });
   }catch(e){ramsCache=null;}
+}
+function rfiPill(spId){
+  if(!rfiCache)return null; const r=rfiCache[spId];
+  const el=document.createElement('span');
+  el.style.cssText='font-size:9px;font-weight:700;border-radius:3px;padding:1px 5px;flex-shrink:0;white-space:nowrap;align-self:center;margin-left:auto;text-transform:uppercase;letter-spacing:0.04em';
+  if(!r){el.textContent='Not started';el.style.cssText+=';color:#8aada9;border:1px solid var(--wsav-border)';return el;}
+  el.textContent=r.status==='Returned'?'Returned':r.status==='Sent'?'With client':'Draft';
+  el.style.cssText+=r.status==='Returned'?';color:#6ee68b;border:1px solid rgba(46,204,113,0.4);background:rgba(46,204,113,0.12)':r.status==='Sent'?';color:#D4A017;border:1px solid rgba(212,160,23,0.4);background:rgba(212,160,23,0.12)':';color:#7ec8f5;border:1px solid rgba(52,152,219,0.4);background:rgba(52,152,219,0.12)';
+  return el;
 }
 function ramsPill(spId){
   if(!ramsCache)return null;
