@@ -437,6 +437,13 @@ const AZURE_CLIENT_ID  = 'cbf09fd6-ec7f-459f-8f19-9770b0732c5f';
 const SP_SITE          = 'https://workspaceav1.sharepoint.com/sites/Engineering';
 const SP_LIST          = 'Projects Dashboard';
 const SP_SCOPES        = ['https://workspaceav1.sharepoint.com/.default'];
+const RAMS_URL         = 'https://madamson25.github.io/WSAV-RAMS/';   // RAMS Builder
+const RAMS_LIST        = 'RAMS';
+const RAMS_SIG_LIST    = 'RAMS';                  // single list: signatures are ItemType 'Signature'
+const RAMS_TYPE_FILTER = true;                    // set false if using separate RAMS / RAMS_Signatures lists
+const ramsF=(type,f)=>[RAMS_TYPE_FILTER?`ItemType eq '${type}'`:'',f].filter(Boolean).join(' and ');
+const RAMS_PHASE       = 'Scheduled';             // RAMS live inside this phase
+const RAMS_TASK        = 'RAMS Complete';
 
 /* ═══════════════════════════════════════════════════
    DATA DEFAULTS
@@ -821,7 +828,7 @@ function makeCard(p,isArchive){
       const allDone=phase.tasks.length>0&&phase.tasks.every(t=>t.done);
       td.innerHTML=`<div class="card-tasks-label">${phase.name} Stage</div>`;
       if(allDone){td.innerHTML+=`<div class="card-all-done">✓ All Tasks Complete</div>`;}
-      else{phase.tasks.forEach((t,ti)=>{const row=document.createElement("div");row.className="card-task-item";const cb=document.createElement("div");cb.className="card-task-cb"+(t.done?" checked":"");cb.dataset.pid=p.id;cb.dataset.pname=phase.name;cb.dataset.ti=ti;const tx=document.createElement("span");tx.className="card-task-text"+(t.done?" done":"");tx.textContent=t.text;cb.addEventListener("click",function(e){e.stopPropagation();const proj=state.projects.find(x=>x.id===this.dataset.pid);const ph=proj.phases.find(x=>x.name===this.dataset.pname);const taskIdx=parseInt(this.dataset.ti);const wasUnchecked=!ph.tasks[taskIdx].done;ph.tasks[taskIdx].done=wasUnchecked;saveProject(proj);renderStats();renderGrid();if(wasUnchecked&&ph.tasks[taskIdx].text==='Equipment Received'){triggerEquipmentReceivedEmail(proj);}});row.appendChild(cb);row.appendChild(tx);if(t.risk&&!t.done){const rk=document.createElement("span");rk.className="card-task-risk";rk.textContent="⚠ Risk";row.appendChild(rk);}td.appendChild(row);});}
+      else{phase.tasks.forEach((t,ti)=>{const row=document.createElement("div");row.className="card-task-item";const cb=document.createElement("div");cb.className="card-task-cb"+(t.done?" checked":"");cb.dataset.pid=p.id;cb.dataset.pname=phase.name;cb.dataset.ti=ti;const tx=document.createElement("span");tx.className="card-task-text"+(t.done?" done":"");tx.textContent=t.text;cb.addEventListener("click",function(e){e.stopPropagation();const proj=state.projects.find(x=>x.id===this.dataset.pid);const ph=proj.phases.find(x=>x.name===this.dataset.pname);const taskIdx=parseInt(this.dataset.ti);const wasUnchecked=!ph.tasks[taskIdx].done;ph.tasks[taskIdx].done=wasUnchecked;saveProject(proj);renderStats();renderGrid();if(wasUnchecked&&ph.tasks[taskIdx].text==='Equipment Received'){triggerEquipmentReceivedEmail(proj);}});row.appendChild(cb);row.appendChild(tx);if(t.text===RAMS_TASK&&p.spId){const rp=ramsPill(p.spId);if(rp)row.appendChild(rp);}if(t.risk&&!t.done){const rk=document.createElement("span");rk.className="card-task-risk";rk.textContent="⚠ Risk";row.appendChild(rk);}td.appendChild(row);});}
       card.appendChild(td);
     }
   }
@@ -947,7 +954,7 @@ function renderPhasesInPanel(p){
     const isDefault=DEFAULT_PHASE_NAMES.has(ph.name);
     const phDiv=document.createElement("div");phDiv.className="phase"+(isActive?" open":"");
     const delBtnHtml=!isDefault?`<button class="phase-delete-btn" data-delphi="${phi}" title="Delete phase" type="button" style="background:none;border:none;cursor:pointer;color:#3d6b66;font-size:13px;padding:0 4px;line-height:1;opacity:0.7" onmouseover="this.style.opacity=1;this.style.color='#ff8a80'" onmouseout="this.style.opacity=0.7;this.style.color='#3d6b66'">&#10005;</button>`:"";
-    phDiv.innerHTML=`<div class="phase-head"><span class="phase-name">${ph.name}${isActive?'<span class="phase-active-dot"></span>':''}</span><div class="phase-right"><span class="phase-count">${done}/${ph.tasks.length}</span>${delBtnHtml}<span class="chevron">&#9660;</span></div></div><div class="phase-body"><ul class="task-list" id="dpt-${phi}"></ul><div class="add-task-row"><input class="wsav-input" type="text" placeholder="Add A Task&#8230;" id="dpti-${phi}" style="padding:6px 9px"/><label class="risk-check-label"><input type="checkbox" id="dptirisk-${phi}"/>&#9888; Risk</label><button data-phi="${phi}" type="button">+ Add</button></div></div>`;
+    phDiv.innerHTML=`<div class="phase-head"><span class="phase-name">${ph.name}${isActive?'<span class="phase-active-dot"></span>':''}</span><div class="phase-right"><span class="phase-count">${done}/${ph.tasks.length}</span>${delBtnHtml}<span class="chevron">&#9660;</span></div></div><div class="phase-body"><ul class="task-list" id="dpt-${phi}"></ul>${ph.name===RAMS_PHASE?'<div id="dp-rams" style="font-size:12px;color:var(--wsav-text-muted);margin:10px 0 4px;padding:10px;border:1px dashed var(--wsav-border-light);border-radius:6px"><div style="font-size:10px;color:var(--wsav-gold);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:6px">RAMS</div><div id="dp-rams-list">Loading…</div></div>':""}<div class="add-task-row"><input class="wsav-input" type="text" placeholder="Add A Task&#8230;" id="dpti-${phi}" style="padding:6px 9px"/><label class="risk-check-label"><input type="checkbox" id="dptirisk-${phi}"/>&#9888; Risk</label><button data-phi="${phi}" type="button">+ Add</button></div></div>`;
     phDiv.querySelector(".phase-head").onclick=function(e){if(e.target.closest("[data-delphi]"))return;phDiv.classList.toggle("open");};
     const delPhaseBtn=phDiv.querySelector("[data-delphi]");
     if(delPhaseBtn){delPhaseBtn.onclick=function(e){e.stopPropagation();if(!confirm("Delete phase \""+ph.name+"\" and all its tasks?"))return;p.phases.splice(phi,1);saveProject(p);renderPhasesInPanel(p);renderGrid();};}
@@ -955,6 +962,7 @@ function renderPhasesInPanel(p){
     addBtn.onclick=function(e){e.preventDefault();e.stopPropagation();const inp=document.getElementById("dpti-"+phi);const txt=inp.value.trim();if(!txt)return;const riskCb=document.getElementById("dptirisk-"+phi);const isRisk=riskCb?riskCb.checked:false;p.phases[phi].tasks.push({text:txt,done:false,risk:isRisk});inp.value="";if(riskCb)riskCb.checked=false;saveProject(p);renderPhasesInPanel(p);renderGrid();};
     container.appendChild(phDiv);renderTasksInPanel(p,phi);
   });
+  if(document.getElementById('dp-rams'))renderRamsInPanel(p);
 }
 function renderTasksInPanel(p,phi){
   const ul=document.getElementById(`dpt-${phi}`);if(!ul)return;ul.innerHTML="";
@@ -1081,6 +1089,69 @@ document.getElementById("ex-generate").onclick=function(){
   const blob=new Blob([html],{type:"text/html"});window.open(URL.createObjectURL(blob),"_blank");
   document.getElementById("export-modal").classList.remove("open");
 };
+
+
+/* ═══════════════════════════════════════════════════
+   RAMS BUILDER LINK — shows this project's RAMS in the panel
+   ═══════════════════════════════════════════════════ */
+async function renderRamsInPanel(p){
+  const box=document.getElementById('dp-rams-list'); if(!box)return;
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const createBtn=p.spId?`<a href="${RAMS_URL}?project=${p.spId}" target="_blank" rel="noopener" class="btn-outline" style="display:inline-block;text-decoration:none;font-size:11px;padding:6px 12px;text-transform:uppercase;letter-spacing:0.04em;margin-top:8px">+ Create RAMS</a>`:'';
+  if(!p.spId){box.innerHTML='Save this project to SharePoint first, then RAMS can be linked to it.';return;}
+  if(!spAccount){box.innerHTML='Sign in to see RAMS.';return;}
+  try{
+    const data=await spGet(`/web/lists/getbytitle('${encodeURIComponent(RAMS_LIST)}')/items?$select=Id,Title,RamsRef,Revision,Status,RequestedEmails&$filter=${ramsF('RAMS',`DashboardProjectId eq ${p.spId}`)}&$top=20`);
+    const items=(data.value||[]).filter(r=>r.Status!=='Superseded');
+    if(!items.length){box.innerHTML=`No RAMS yet for this project.<br>${createBtn}`;return;}
+    const rows=await Promise.all(items.map(async r=>{
+      const req=(r.RequestedEmails||'').split(';').map(e=>e.trim().toLowerCase()).filter(Boolean);
+      let signed=0;
+      if(req.length){try{const sg=await spGet(`/web/lists/getbytitle('${encodeURIComponent(RAMS_SIG_LIST)}')/items?$select=SignerEmail,Revision&$filter=${ramsF('Signature',`RamsItemId eq ${r.Id}`)}&$top=200`);
+        const em=new Set((sg.value||[]).filter(x=>x.Revision===r.Revision).map(x=>(x.SignerEmail||'').toLowerCase()));signed=req.filter(e=>em.has(e)).length;}catch(e){}}
+      const ok=req.length&&signed===req.length;
+      const col=ok||r.Status==='Complete'?'#6ee68b':r.Status==='Issued'?'#D4A017':'#8aada9';
+      return `<a href="${RAMS_URL}?rams=${r.Id}" target="_blank" rel="noopener" style="display:flex;justify-content:space-between;gap:8px;padding:8px 10px;margin-bottom:6px;border:1px solid var(--wsav-border);border-radius:6px;text-decoration:none;color:var(--wsav-offwhite);background:var(--wsav-dark2)">
+        <span><strong style="color:var(--wsav-white)">${esc(r.RamsRef||r.Title)}</strong> · Rev ${esc(r.Revision)}</span>
+        <span style="color:${col};font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.04em">${esc(r.Status)}${req.length?` · ${signed}/${req.length} signed`:''}</span></a>`;
+    }));
+    box.innerHTML=rows.join('')+createBtn;
+  }catch(e){
+    box.innerHTML=String(e.message).startsWith('404')?`RAMS Builder isn't set up on SharePoint yet.<br>${createBtn}`:`Couldn't load RAMS: ${esc(e.message)}`;
+  }
+}
+
+
+/* RAMS summary for cards — one query per sync */
+let ramsCache=null;
+async function loadRamsCache(){
+  if(!spAccount)return;
+  try{
+    const r=await spGet(`/web/lists/getbytitle('${encodeURIComponent(RAMS_LIST)}')/items?$select=Id,DashboardProjectId,Status,Revision,RequestedEmails,Modified${RAMS_TYPE_FILTER?`&$filter=${ramsF('RAMS','')}`:''}&$top=2000`);
+    let sg={value:[]};try{sg=await spGet(`/web/lists/getbytitle('${encodeURIComponent(RAMS_SIG_LIST)}')/items?$select=RamsItemId,Revision,SignerEmail${RAMS_TYPE_FILTER?`&$filter=${ramsF('Signature','')}`:''}&$top=5000`);}catch(e){}
+    const signed={};(sg.value||[]).forEach(x=>{const k=x.RamsItemId+'|'+x.Revision;(signed[k]=signed[k]||new Set()).add((x.SignerEmail||'').toLowerCase());});
+    ramsCache={};
+    (r.value||[]).filter(i=>i.DashboardProjectId&&i.Status!=='Superseded').forEach(i=>{
+      const req=(i.RequestedEmails||'').split(';').map(e=>e.trim().toLowerCase()).filter(Boolean);
+      const got=signed[i.Id+'|'+i.Revision]||new Set();
+      (ramsCache[i.DashboardProjectId]=ramsCache[i.DashboardProjectId]||[]).push({id:i.Id,status:i.Status,req:req.length,signed:req.filter(e=>got.has(e)).length,mod:i.Modified});
+    });
+  }catch(e){ramsCache=null;}
+}
+function ramsPill(spId){
+  if(!ramsCache)return null;
+  const list=(ramsCache[spId]||[]).sort((a,b)=>String(b.mod).localeCompare(String(a.mod)));
+  const el=document.createElement('span');
+  el.style.cssText='font-size:9px;font-weight:700;border-radius:3px;padding:1px 5px;flex-shrink:0;white-space:nowrap;align-self:center;margin-left:auto;text-transform:uppercase;letter-spacing:0.04em';
+  if(!list.length){el.textContent='Not started';el.style.cssText+=';color:#8aada9;border:1px solid var(--wsav-border)';return el;}
+  const r=list[0];const ok=r.req&&r.signed===r.req;
+  el.textContent=r.status==='Complete'?'Complete':r.status==='Issued'&&r.req?`${r.signed}/${r.req} signed`:r.status;
+  el.style.cssText+=ok||r.status==='Complete'?';color:#6ee68b;border:1px solid rgba(46,204,113,0.4);background:rgba(46,204,113,0.12)':r.status==='Issued'?';color:#D4A017;border:1px solid rgba(212,160,23,0.4);background:rgba(212,160,23,0.12)':';color:#7ec8f5;border:1px solid rgba(52,152,219,0.4);background:rgba(52,152,219,0.12)';
+  el.title='Open the project to see its RAMS';
+  return el;
+}
+const _syncFromSP_base=syncFromSP;
+syncFromSP=async function(){await _syncFromSP_base();await loadRamsCache();};
 
 /* ═══════════════════════════════════════════════════
    INIT — sign-in flow
