@@ -1220,29 +1220,29 @@ const RFI_GUIDES={
   webex:"https://help.webex.com/en-us/article/n9r1aac"
 };
 const RFI_PROVIDERS={
-  teams:{name:"Microsoft Teams Rooms",guide:"Microsoft's guide to setting up Teams Rooms accounts",
+  teams:{name:"Microsoft Teams Rooms",guide:"Microsoft's Guide to Setting Up Teams Rooms Accounts",
     intro:"Each room needs its own Microsoft 365 account (a \"resource account\") with a Microsoft Teams Rooms licence. Your IT team or IT provider creates these - please send us the sign-in details below.",
     checks:["A separate account has been created for each room","A Teams Rooms licence (Basic or Pro) is assigned to each account","Multi-factor authentication (MFA) is turned OFF for these accounts","The passwords are set to never expire"],
     mfa:"Please turn off MFA for the room accounts. The room equipment signs in by itself and can't respond to a code or app prompt, so it won't connect if MFA is on.",
-    cols:["Account email (sign-in)","Password"],secret:1,short:"A Microsoft 365 account and Teams Rooms licence per room. MFA must be off for these accounts."},
-  zoom:{name:"Zoom Rooms",guide:"Zoom's guide to setting up Zoom Rooms",
+    cols:["Account Email (Sign-In)","Password"],secret:1,short:"A Microsoft 365 account and Teams Rooms licence per room. MFA must be off for these accounts."},
+  zoom:{name:"Zoom Rooms",guide:"Zoom's Guide to Setting Up Zoom Rooms",
     intro:"Each room needs a Zoom Room set up in your company's Zoom account with a Zoom Rooms licence. Your Zoom administrator creates the rooms and generates an activation code for each one.",
     checks:["Each room has been added in the Zoom web portal","A Zoom Rooms licence is assigned to each room","Activation codes have been generated (they last 10 days, so please create them within a week of installation)"],
-    cols:["Activation code (16 digits)","Room calendar email (if used)"],secret:0,short:"A Zoom Room and licence per room, plus an activation code (lasts 10 days)."},
-  meet:{name:"Google Meet hardware",guide:"Google's guide to enrolling Meet hardware",
+    cols:["Activation Code (16 Digits)","Room Calendar Email (If Used)"],secret:0,short:"A Zoom Room and licence per room, plus an activation code (lasts 10 days)."},
+  meet:{name:"Google Meet Hardware",guide:"Google's Guide to Enrolling Meet Hardware",
     intro:"Each room device needs a Google Meet hardware licence in your Google Workspace, and a calendar room (resource) so people can book it. On installation day the devices are enrolled using an account that's allowed to enrol Meet hardware.",
     checks:["A Google Meet hardware licence is available for each device","A calendar room (resource) exists for each room","The enrolment account below has the \"Enroll Google Meet hardware\" privilege"],
     mfa:"If the enrolment account uses 2-Step Verification, please make sure the person with the phone is available on installation day, or turn it off for that account while we enrol the devices.",
-    cols:["Calendar room (resource) name",""],secret:0,enrol:true,short:"A Meet hardware licence per device, a calendar room per room, and an account that can enrol devices."},
-  webex:{name:"Cisco Webex devices",guide:"Cisco's guide to adding room devices in Control Hub",
+    cols:["Calendar Room (Resource) Name",""],secret:0,enrol:true,short:"A Meet hardware licence per device, a calendar room per room, and an account that can enrol devices."},
+  webex:{name:"Cisco Webex Devices",guide:"Cisco's Guide to Adding Room Devices in Control Hub",
     intro:"Each room needs a Workspace in your company's Webex Control Hub with a licence, and an activation code to link the room equipment to it.",
     checks:["A Workspace has been created in Control Hub for each room","A licence is assigned to each Workspace","Activation codes have been generated (room device codes last 7 days, so please create them close to installation)"],
-    cols:["Workspace name in Control Hub","Activation code (16 digits)"],secret:0,short:"A Workspace and licence per room in Control Hub, plus an activation code (lasts 7 days)."}
+    cols:["Workspace Name in Control Hub","Activation Code (16 Digits)"],secret:0,short:"A Workspace and licence per room in Control Hub, plus an activation code (lasts 7 days)."}
 };
 /* Used when the PM lets the client choose: one table that suits any provider */
-const RFI_GENERIC={name:"Your meeting room provider",
+const RFI_GENERIC={name:"Your Meeting Room Provider",
   checks:["The room accounts (or rooms / Workspaces) have been created","A licence is assigned to each room","Microsoft Teams only: MFA is turned off for the room accounts","Zoom or Webex only: activation codes have been generated close to installation"],
-  cols:["Account / room / Workspace","Password or activation code"],secret:1};
+  cols:["Account / Room / Workspace","Password or Activation Code"],secret:1};
 const RFI_KEYS=Object.keys(RFI_PROVIDERS);
 const RFI_MIN_ROWS=5;
 let rfiP=null, rfiStep=1;
@@ -1312,7 +1312,7 @@ function rfiProblems(r){const x=[];if(!r.client)x.push('client company');if(!r.r
 function rfiPdfName(p,r){return [p.num,'Meeting-Room-Setup',(r.client||'').replace(/[^\w\- ]+/g,'').trim()].filter(Boolean).join('_').replace(/\s+/g,'-')+'.pdf';}
 function rfiEmailParts(p,r){
   const P=RFI_PROVIDERS[r.provider];
-  const subject=`Meeting room set-up – details needed${p.name?' for '+p.name:''}${r.returnBy?' by '+rDate(r.returnBy):''}`;
+  const subject=`Meeting Room Set-Up – Details Needed${p.name?' for '+p.name:''}${r.returnBy?' by '+rDate(r.returnBy):''}`;
   const body=`Hi ${(r.contactName||'').split(' ')[0]||'there'},
 
 To get your meeting rooms ready${r.installDate?' for installation on '+rDate(r.installDate):''}, we need the sign-in details for your ${P?P.name+' ':''}room accounts. Your IT team or IT provider will usually need to set these up first.
@@ -1378,7 +1378,7 @@ const rWin=s=>String(s??'').replace(/[–—]/g,'-').replace(/[‘’]/g,"'").re
 async function rfiBuildPdf(p,r){
   await rfiLoadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js');
   const {PDFDocument,StandardFonts,rgb,PDFString,PDFName}=PDFLib;
-  const doc=await PDFDocument.create(); doc.setTitle(`Meeting room set-up – ${r.client||''}`); doc.setAuthor('Workspace Audio Visual');
+  const doc=await PDFDocument.create(); doc.setTitle(`Meeting Room Set-Up – ${r.client||''}`); doc.setAuthor('Workspace Audio Visual');
   const font=await doc.embedFont(StandardFonts.Helvetica), bold=await doc.embedFont(StandardFonts.HelveticaBold);
   const logoSrc=(document.querySelector('.header-logo')||document.querySelector('.signin-logo')||{}).src;
   const logo=logoSrc?await doc.embedPng(await fetch(logoSrc).then(x=>x.arrayBuffer())):null;
@@ -1388,7 +1388,7 @@ async function rfiBuildPdf(p,r){
   const generic=!r.provider, P=generic?RFI_GENERIC:RFI_PROVIDERS[r.provider];
   const wrap=(t,f,sz,w)=>{const out=[];rWin(t).split('\n').forEach(par=>{let line='';par.split(' ').forEach(word=>{const test=line?line+' '+word:word;if(f.widthOfTextAtSize(test,sz)>w&&line){out.push(line);line=word;}else line=test;});out.push(line);});return out;};
   const footer=()=>page.drawText(rWin(`Workspace Audio Visual Ltd · ${r.pmName||''} · ${r.pmEmail||''}${r.pmPhone?' · '+r.pmPhone:''} · Page ${pageNo}`),{x:M,y:22,size:7.5,font,color:MUT});
-  const newPage=()=>{if(page)footer();page=doc.addPage([W,H]);pageNo++;y=H-M;if(pageNo>1){page.drawText(rWin(`Meeting room set-up · ${r.client||''}`),{x:M,y:H-28,size:8,font:bold,color:MG});y=H-48;}};
+  const newPage=()=>{if(page)footer();page=doc.addPage([W,H]);pageNo++;y=H-M;if(pageNo>1){page.drawText(rWin(`Meeting Room Set-Up · ${r.client||''}`),{x:M,y:H-28,size:8,font:bold,color:MG});y=H-48;}};
   const need=h=>{if(y-h<44)newPage();};
   const text=(t,{f=font,sz=9.5,col=INK,gap=3,x=M,w=CW}={})=>{wrap(t,f,sz,w).forEach(l=>{need(sz+4);page.drawText(l,{x,y:y-sz,size:sz,font:f,color:col});y-=sz+3;});y-=gap;};
   const link=(label,url)=>{need(26);const sz=9.5,w=bold.widthOfTextAtSize(rWin(label),sz);
@@ -1410,7 +1410,7 @@ async function rfiBuildPdf(p,r){
   newPage();
   page.drawRectangle({x:0,y:H-118,width:W,height:118,color:MG});
   if(logo){const ls=105/logo.width;page.drawImage(logo,{x:M,y:H-20-logo.height*ls,width:105,height:logo.height*ls});}
-  page.drawText('Meeting room set-up',{x:M,y:H-90,size:19,font:bold,color:WH});
+  page.drawText('Meeting Room Set-Up',{x:M,y:H-90,size:19,font:bold,color:WH});
   page.drawText(rWin(`${r.client||''}${p.num?' · Ref '+p.num:''}${r.installDate?' · Installation '+rDate(r.installDate):''}`),{x:M,y:H-105,size:9.5,font,color:GOLD});
   y=H-138;
   text(`Hello${r.contactName?' '+r.contactName.split(' ')[0]:''},`,{sz:10.5,gap:2});
@@ -1418,31 +1418,31 @@ async function rfiBuildPdf(p,r){
   const steps=[`1. Fill this in using Adobe Acrobat Reader, Microsoft Edge or Google Chrome. Pass anything technical to your IT team.`,`2. Save it, then email it back to ${r.pmName||'us'} at ${r.pmEmail||''}${r.returnBy?' by '+rDate(r.returnBy):''}.`,`3. Prefer not to email passwords? Leave them blank and we'll arrange another way.`];
   need(56);page.drawRectangle({x:M,y:y-50,width:CW,height:50,color:rgb(0.95,0.93,0.9)});let iy=y-14;steps.forEach(l=>{page.drawText(rWin(l),{x:M+10,y:iy,size:8.8,font,color:INK});iy-=13;});y-=60;
   /* 1–3 */
-  head(1,'About you');
-  row([{id:'company',label:'Company',val:r.client},{id:'contact_name',label:'Your name',val:r.contactName}]);
+  head(1,'About You');
+  row([{id:'company',label:'Company',val:r.client},{id:'contact_name',label:'Your Name',val:r.contactName}]);
   row([{id:'contact_email',label:'Email',val:r.contactEmail},{id:'contact_phone',label:'Phone'}]);
   head(2,'Your IT');
-  row([{id:'it_managed',label:'Who looks after your IT?',options:['Our own in-house IT team','An external IT company','A mix of both','Not sure']},{id:'it_company',label:'IT company name (if external)'}]);
-  row([{id:'it_contact',label:'IT contact name'},{id:'it_email',label:'Their email'},{id:'it_phone',label:'Their phone'}]);
-  head(3,'Your meeting room provider');
-  if(generic){ row([{id:'provider',label:'Which service will your meeting rooms use? (choose from the list)',options:[...RFI_KEYS.map(k=>RFI_PROVIDERS[k].name),'Not sure yet']}]);
+  row([{id:'it_managed',label:'Who looks after your IT?',options:['Our own in-house IT team','An external IT company','A mix of both','Not sure']},{id:'it_company',label:'IT Company Name (If External)'}]);
+  row([{id:'it_contact',label:'IT Contact Name'},{id:'it_email',label:'Their Email'},{id:'it_phone',label:'Their Phone'}]);
+  head(3,'Your Meeting Room Provider');
+  if(generic){ row([{id:'provider',label:'Which service will your meeting rooms use? (choose from the list)',options:[...RFI_KEYS.map(k=>RFI_PROVIDERS[k].name),'Not Sure Yet']}]);
     form.createTextField('form_type').addToPage(page,{x:W-40,y:12,width:1,height:1,borderWidth:0}); form.getTextField('form_type').setText('generic'); }
   else { text(RFI_PROVIDERS[r.provider].name,{f:bold,sz:11,col:MG,gap:2}); text("If this isn't right, please tell us in section 5.",{sz:8.5,col:MUT,gap:4});
     form.createTextField('provider_key').addToPage(page,{x:W-40,y:12,width:1,height:1,borderWidth:0}); form.getTextField('provider_key').setText(r.provider); }
   /* 4 */
-  head(4,generic?'Setting up your room accounts':'Setting up your '+P.name);
+  head(4,generic?'Setting Up Your Room Accounts':'Setting Up Your '+P.name);
   if(generic){
     text('What your IT team needs to do depends on your provider. Find yours below - each has a link to the provider\'s own step-by-step guide.',{sz:9.5,gap:6});
     RFI_KEYS.forEach(k=>{const q=RFI_PROVIDERS[k];need(48);text(q.name,{f:bold,sz:9.5,col:MG,gap:1});text(q.short,{sz:9,gap:1});link(q.guide,RFI_GUIDES[k]);});
-    note(RFI_PROVIDERS.teams.mfa,'Microsoft Teams Rooms: please turn off MFA for the room accounts');
+    note(RFI_PROVIDERS.teams.mfa,'Microsoft Teams Rooms: Please Turn Off MFA for the Room Accounts');
   } else {
     text(P.intro,{sz:9.5,gap:5}); link(P.guide,RFI_GUIDES[r.provider]);
-    if(P.mfa) note(P.mfa,r.provider==='teams'?'Please turn off MFA for the room accounts':'About 2-Step Verification');
+    if(P.mfa) note(P.mfa,r.provider==='teams'?'Please Turn Off MFA for the Room Accounts':'About 2-Step Verification');
   }
   text('Please tick when done (or pass this to your IT team):',{f:bold,sz:9,gap:4});
   P.checks.forEach((t,i)=>check(`chk_${i+1}`,t));
-  if(!generic&&P.enrol) row([{id:'enrol_email',label:'Enrolment account email'},{id:'enrol_secret',label:'Enrolment account password'}]);
-  y-=2; need(110); text('Room details',{f:bold,sz:10,col:MG,gap:4});
+  if(!generic&&P.enrol) row([{id:'enrol_email',label:'Enrolment Account Email'},{id:'enrol_secret',label:'Enrolment Account Password'}]);
+  y-=2; need(110); text('Room Details',{f:bold,sz:10,col:MG,gap:4});
   const two=!!P.cols[1];
   const cols=[['#',22],['Room name',two?150:220],[P.cols[0],two?163:CW-22-220],...(two?[[P.cols[1],CW-22-150-163]]:[])];
   const th=()=>{let x=M;cols.forEach(([t,w])=>{page.drawRectangle({x,y:y-16,width:w,height:16,color:rgb(0.95,0.93,0.9)});page.drawText(rWin(t),{x:x+4,y:y-11.5,size:8,font:bold,color:MG});x+=w;});y-=18;};
@@ -1455,7 +1455,7 @@ async function rfiBuildPdf(p,r){
     if(two) field(`room${i}_b`,x,cols[3][1],18,''); y-=22; }
   text('More rooms? List them in section 5.',{sz:8,col:MUT,gap:4});
   /* 5 */
-  head(5,'Anything else'); need(60); field('notes',M,CW,44,'',{multi:true}); y-=52; check('call',"I'd like a quick call to go through this");
+  head(5,'Anything Else'); need(60); field('notes',M,CW,44,'',{multi:true}); y-=52; check('call',"I'd like a quick call to go through this");
   y-=4; text(`Thank you. Please save this form and email it to ${r.pmEmail||'us'}.`,{f:bold,sz:10,col:MG});
   footer(); form.updateFieldAppearances(font);
   return new Blob([await doc.save()],{type:'application/pdf'});
@@ -1469,7 +1469,7 @@ async function rfiImport(file){
     const raw={}; doc.getForm().getFields().forEach(fd=>{const n=fd.getName();
       if(fd instanceof PDFLib.PDFTextField)raw[n]=fd.getText()||'';else if(fd instanceof PDFLib.PDFCheckBox)raw[n]=fd.isChecked();else if(fd instanceof PDFLib.PDFDropdown)raw[n]=(fd.getSelected()||[])[0]||'';else if(fd instanceof PDFLib.PDFRadioGroup)raw[n]=fd.getSelected()||'';});
     if(!Object.keys(raw).length){st.textContent='That PDF has no form fields. If it was printed and scanned, read the details from it directly.';return;}
-    const prov=raw.provider_key||RFI_KEYS.find(k=>RFI_PROVIDERS[k].name===raw.provider)||'';
+    const prov=raw.provider_key||RFI_KEYS.find(k=>RFI_PROVIDERS[k].name.toLowerCase()===String(raw.provider||'').toLowerCase())||'';
     const generic=raw.form_type==='generic';
     const secret=k=>k==='enrol_secret'||((generic||RFI_PROVIDERS[prov]?.secret)&&/^room\d+_b$/.test(k));
     /* passwords stay in the client's PDF only – never copied into SharePoint */
