@@ -216,6 +216,45 @@ html,body{width:100%;min-height:100vh;font-family:'Inter','Segoe UI',system-ui,s
 .modal-field label{font-size:11px;color:var(--wsav-text-muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:700;display:block;margin-bottom:6px}
 .modal-field input,.modal-field select{width:100%;font-size:13px;padding:9px 11px}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:1.5rem}
+/* Room Account RFI pop-up */
+#rfi-modal{z-index:1000}
+.rfi-modal{width:780px;max-height:90vh;overflow:auto;padding:1.6rem 1.8rem}
+.rfi-top{display:flex;align-items:flex-start;gap:12px}
+.rfi-top > div{flex:1;min-width:0}
+.rfi-sub{font-size:12px;color:var(--wsav-text-muted)}
+.rfi-close{background:none;border:0;color:var(--wsav-text-muted);font-size:16px;cursor:pointer;padding:2px 6px}
+.rfi-close:hover{color:var(--wsav-gold)}
+.rfi-status{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;border-radius:20px;padding:3px 10px;white-space:nowrap}
+.rfi-status.s-Draft{color:#7ec8f5;background:rgba(52,152,219,0.15)}.rfi-status.s-Sent{color:#D4A017;background:rgba(212,160,23,0.15)}.rfi-status.s-Returned{color:#6ee68b;background:rgba(46,204,113,0.15)}
+.rfi-tabs{display:flex;gap:2px;border-bottom:1px solid var(--wsav-border);margin:16px 0 14px;flex-wrap:wrap}
+.rfi-tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--wsav-text-muted);padding:8px 12px;font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer}
+.rfi-tabs button.on{color:var(--wsav-gold);border-bottom-color:var(--wsav-gold)}
+.rfi-hint{font-size:12px;color:var(--wsav-text-muted);margin:0 0 12px;line-height:1.5}
+.rfi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+.rfi-modal textarea.wsav-input{width:100%;resize:vertical;font-family:inherit;line-height:1.5;padding:9px 11px}
+.rfi-more{border:1px solid var(--wsav-border);border-radius:8px;padding:8px 12px;margin-top:4px}
+.rfi-more summary{cursor:pointer;font-size:12px;color:var(--wsav-text-muted)}
+.rfi-more[open] summary{margin-bottom:10px}
+.rfi-room{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.rfi-room span{width:22px;font-size:12px;color:var(--wsav-text-muted);text-align:right}
+.rfi-room input{flex:1}
+.rfi-x{background:none;border:0;color:var(--wsav-text-muted);cursor:pointer;font-size:13px;padding:4px 8px}
+.rfi-x:hover{color:#ff8a80}
+.rfi-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rfi-stepn{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--wsav-white);margin-bottom:8px}
+.rfi-stepn b{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--wsav-gold);color:var(--wsav-dark3);font-size:11px}
+.rfi-hint strong{color:var(--wsav-offwhite)}
+.rfi-warn{background:rgba(192,57,43,0.12);border:1px solid rgba(192,57,43,0.4);color:#ff8a80;border-radius:8px;padding:10px 14px;font-size:13px}
+.rfi-sec{border:1px solid var(--wsav-border);border-radius:10px;padding:12px 14px;margin-top:14px}
+.rfi-sec-h{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;color:var(--wsav-gold);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px}
+.rfi-kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid rgba(26,80,72,0.5);font-size:12.5px}
+.rfi-kv:last-child{border-bottom:0}
+.rfi-kv strong{text-align:right;font-weight:600;max-width:60%}
+.rfi-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px}
+.rfi-table th{text-align:left;font-size:10px;color:var(--wsav-gold);text-transform:uppercase;letter-spacing:0.06em;padding:6px 8px;background:var(--wsav-dark2)}
+.rfi-table td{padding:7px 8px;border-bottom:1px solid rgba(26,80,72,0.5)}
+@media (max-width:640px){.rfi-grid{grid-template-columns:1fr}.rfi-modal{padding:1.2rem}}
+
 .empty-state{color:var(--wsav-text-muted);font-size:14px;padding:2rem;text-align:center;grid-column:1/-1}
 .divider-label{grid-column:1/-1;font-size:10px;color:var(--wsav-text-muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:700;padding:6px 0 2px;border-bottom:1px solid var(--wsav-border);margin-bottom:2px}
 .divider-complete{color:#3B6D11;border-bottom-color:rgba(46,204,113,0.25)}
@@ -444,7 +483,7 @@ const RAMS_TYPE_FILTER = true;                    // set false if using separate
 const ramsF=(type,f)=>[RAMS_TYPE_FILTER?`ItemType eq '${type}'`:'',f].filter(Boolean).join(' and ');
 const RAMS_PHASE       = 'Scheduled';             // RAMS live inside this phase
 const RAMS_TASK        = 'RAMS Complete';
-const RFI_TASK         = 'Room Account RFI';       // opens the RFI creator in the RAMS Builder
+const RFI_TASK         = 'Room Account RFI';       // opens the RFI pop-up (see ROOM ACCOUNT RFI below)
 const NEW_PLANNING_TASKS = ['Room Account RFI','PlanRadar Project Creation'];  // added to existing projects still in Planning
 
 /* ═══════════════════════════════════════════════════
@@ -830,7 +869,7 @@ function makeCard(p,isArchive){
       const allDone=phase.tasks.length>0&&phase.tasks.every(t=>t.done);
       td.innerHTML=`<div class="card-tasks-label">${phase.name} Stage</div>`;
       if(allDone){td.innerHTML+=`<div class="card-all-done">✓ All Tasks Complete</div>`;}
-      else{phase.tasks.forEach((t,ti)=>{const row=document.createElement("div");row.className="card-task-item";const cb=document.createElement("div");cb.className="card-task-cb"+(t.done?" checked":"");cb.dataset.pid=p.id;cb.dataset.pname=phase.name;cb.dataset.ti=ti;const tx=document.createElement("span");tx.className="card-task-text"+(t.done?" done":"");tx.textContent=t.text;cb.addEventListener("click",function(e){e.stopPropagation();const proj=state.projects.find(x=>x.id===this.dataset.pid);const ph=proj.phases.find(x=>x.name===this.dataset.pname);const taskIdx=parseInt(this.dataset.ti);const wasUnchecked=!ph.tasks[taskIdx].done;ph.tasks[taskIdx].done=wasUnchecked;saveProject(proj);renderStats();renderGrid();if(wasUnchecked&&ph.tasks[taskIdx].text==='Equipment Received'){triggerEquipmentReceivedEmail(proj);}});row.appendChild(cb);row.appendChild(tx);if(t.text===RAMS_TASK&&p.spId){const rp=ramsPill(p.spId);if(rp)row.appendChild(rp);}if(t.text===RFI_TASK&&p.spId){const fp=rfiPill(p.spId);if(fp)row.appendChild(fp);}if(t.risk&&!t.done){const rk=document.createElement("span");rk.className="card-task-risk";rk.textContent="⚠ Risk";row.appendChild(rk);}td.appendChild(row);});}
+      else{phase.tasks.forEach((t,ti)=>{const row=document.createElement("div");row.className="card-task-item";const cb=document.createElement("div");cb.className="card-task-cb"+(t.done?" checked":"");cb.dataset.pid=p.id;cb.dataset.pname=phase.name;cb.dataset.ti=ti;const tx=document.createElement("span");tx.className="card-task-text"+(t.done?" done":"");tx.textContent=t.text;cb.addEventListener("click",function(e){e.stopPropagation();const proj=state.projects.find(x=>x.id===this.dataset.pid);const ph=proj.phases.find(x=>x.name===this.dataset.pname);const taskIdx=parseInt(this.dataset.ti);const wasUnchecked=!ph.tasks[taskIdx].done;ph.tasks[taskIdx].done=wasUnchecked;saveProject(proj);renderStats();renderGrid();if(wasUnchecked&&ph.tasks[taskIdx].text==='Equipment Received'){triggerEquipmentReceivedEmail(proj);}});row.appendChild(cb);row.appendChild(tx);if(t.text===RAMS_TASK&&p.spId){const rp=ramsPill(p.spId);if(rp)row.appendChild(rp);}if(t.text===RFI_TASK){row.appendChild(rfiPill(p));}if(t.risk&&!t.done){const rk=document.createElement("span");rk.className="card-task-risk";rk.textContent="⚠ Risk";row.appendChild(rk);}td.appendChild(row);});}
       card.appendChild(td);
     }
   }
@@ -988,8 +1027,9 @@ function renderTasksInPanel(p,phi){
     lbl.appendChild(cb);lbl.appendChild(span);
     cb.onchange=function(){const wasUnchecked=!p.phases[phi].tasks[ti].done;p.phases[phi].tasks[ti].done=this.checked;saveProject(p);renderPhasesInPanel(p);renderGrid();renderStats();if(wasUnchecked&&this.checked&&t.text==='Equipment Received'){triggerEquipmentReceivedEmail(p);}};
     li.appendChild(lbl);
-    if(t.text===RFI_TASK&&p.spId){const rp=rfiPill(p.spId);if(rp)li.appendChild(rp);const a=document.createElement("a");a.href=`${RAMS_URL}?rfi=${p.spId}`;a.target="_blank";a.rel="noopener";a.textContent="Open";
-      a.style.cssText="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--wsav-gold);border:1px solid var(--wsav-gold-muted);border-radius:4px;padding:2px 8px;text-decoration:none;flex-shrink:0";li.appendChild(a);}
+    if(t.text===RFI_TASK){li.appendChild(rfiPill(p));const ob=document.createElement("button");ob.type="button";ob.textContent="Open";
+      ob.style.cssText="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--wsav-gold);background:none;border:1px solid var(--wsav-gold-muted);border-radius:4px;padding:2px 8px;cursor:pointer;flex-shrink:0";
+      ob.onclick=e=>{e.preventDefault();e.stopPropagation();openRfiModal(p);};li.appendChild(ob);}
     const riskBtn=document.createElement("button");
     riskBtn.type="button";
     riskBtn.className="task-risk-btn"+(t.risk?" risk-on":"");
@@ -1134,11 +1174,9 @@ async function renderRamsInPanel(p){
 
 
 /* RAMS summary for cards — one query per sync */
-let ramsCache=null, rfiCache=null;
+let ramsCache=null;
 async function loadRamsCache(){
   if(!spAccount)return;
-  try{const f=await spGet(`/web/lists/getbytitle('${encodeURIComponent(RAMS_LIST)}')/items?$select=Id,DashboardProjectId,Status,Modified&$filter=ItemType eq 'RFI'&$top=1000`);
-    rfiCache={};(f.value||[]).filter(i=>i.DashboardProjectId).forEach(i=>{const c=rfiCache[i.DashboardProjectId];if(!c||String(i.Modified)>String(c.mod))rfiCache[i.DashboardProjectId]={status:i.Status,mod:i.Modified};});}catch(e){rfiCache=null;}
   try{
     const r=await spGet(`/web/lists/getbytitle('${encodeURIComponent(RAMS_LIST)}')/items?$select=Id,DashboardProjectId,Status,Revision,RequestedEmails,Modified${RAMS_TYPE_FILTER?`&$filter=${ramsF('RAMS','')}`:''}&$top=2000`);
     let sg={value:[]};try{sg=await spGet(`/web/lists/getbytitle('${encodeURIComponent(RAMS_SIG_LIST)}')/items?$select=RamsItemId,Revision,SignerEmail${RAMS_TYPE_FILTER?`&$filter=${ramsF('Signature','')}`:''}&$top=5000`);}catch(e){}
@@ -1150,15 +1188,6 @@ async function loadRamsCache(){
       (ramsCache[i.DashboardProjectId]=ramsCache[i.DashboardProjectId]||[]).push({id:i.Id,status:i.Status,req:req.length,signed:req.filter(e=>got.has(e)).length,mod:i.Modified});
     });
   }catch(e){ramsCache=null;}
-}
-function rfiPill(spId){
-  if(!rfiCache)return null; const r=rfiCache[spId];
-  const el=document.createElement('span');
-  el.style.cssText='font-size:9px;font-weight:700;border-radius:3px;padding:1px 5px;flex-shrink:0;white-space:nowrap;align-self:center;margin-left:auto;text-transform:uppercase;letter-spacing:0.04em';
-  if(!r){el.textContent='Not started';el.style.cssText+=';color:#8aada9;border:1px solid var(--wsav-border)';return el;}
-  el.textContent=r.status==='Returned'?'Returned':r.status==='Sent'?'With client':'Draft';
-  el.style.cssText+=r.status==='Returned'?';color:#6ee68b;border:1px solid rgba(46,204,113,0.4);background:rgba(46,204,113,0.12)':r.status==='Sent'?';color:#D4A017;border:1px solid rgba(212,160,23,0.4);background:rgba(212,160,23,0.12)':';color:#7ec8f5;border:1px solid rgba(52,152,219,0.4);background:rgba(52,152,219,0.12)';
-  return el;
 }
 function ramsPill(spId){
   if(!ramsCache)return null;
@@ -1174,6 +1203,309 @@ function ramsPill(spId){
 }
 const _syncFromSP_base=syncFromSP;
 syncFromSP=async function(){await _syncFromSP_base();await loadRamsCache();};
+
+
+/* ═══════════════════════════════════════════════════
+   ROOM ACCOUNT RFI — pop-up on the "Room Account RFI" Planning task.
+   The RFI is saved on the task itself (inside PhasesJSON), so there's
+   nothing extra to set up in SharePoint. The pop-up creates a fillable
+   PDF for the client, who fills it in and emails it back; uploading it
+   here reads the answers in.
+   ═══════════════════════════════════════════════════ */
+const RFI_MAX_ROOMS  = 50;
+const RFI_GUIDES={
+  teams:"https://learn.microsoft.com/en-us/microsoftteams/rooms/rooms-deploy",
+  zoom:"https://support.zoom.us/hc/en-us/articles/360000163266",
+  meet:"https://knowledge.workspace.google.com/admin/meet-hardware/enroll-and-license-meet-hardware-devices",
+  webex:"https://help.webex.com/en-us/article/n9r1aac"
+};
+const RFI_PROVIDERS={
+  teams:{name:"Microsoft Teams Rooms",guide:"Microsoft's guide to setting up Teams Rooms accounts",
+    intro:"Each room needs its own Microsoft 365 account (a \"resource account\") with a Microsoft Teams Rooms licence. Your IT team or IT provider creates these - please send us the sign-in details below.",
+    checks:["A separate account has been created for each room","A Teams Rooms licence (Basic or Pro) is assigned to each account","Multi-factor authentication (MFA) is turned OFF for these accounts","The passwords are set to never expire"],
+    mfa:"Please turn off MFA for the room accounts. The room equipment signs in by itself and can't respond to a code or app prompt, so it won't connect if MFA is on.",
+    cols:["Account email (sign-in)","Password"],secret:1,short:"A Microsoft 365 account and Teams Rooms licence per room. MFA must be off for these accounts."},
+  zoom:{name:"Zoom Rooms",guide:"Zoom's guide to setting up Zoom Rooms",
+    intro:"Each room needs a Zoom Room set up in your company's Zoom account with a Zoom Rooms licence. Your Zoom administrator creates the rooms and generates an activation code for each one.",
+    checks:["Each room has been added in the Zoom web portal","A Zoom Rooms licence is assigned to each room","Activation codes have been generated (they last 10 days, so please create them within a week of installation)"],
+    cols:["Activation code (16 digits)","Room calendar email (if used)"],secret:0,short:"A Zoom Room and licence per room, plus an activation code (lasts 10 days)."},
+  meet:{name:"Google Meet hardware",guide:"Google's guide to enrolling Meet hardware",
+    intro:"Each room device needs a Google Meet hardware licence in your Google Workspace, and a calendar room (resource) so people can book it. On installation day the devices are enrolled using an account that's allowed to enrol Meet hardware.",
+    checks:["A Google Meet hardware licence is available for each device","A calendar room (resource) exists for each room","The enrolment account below has the \"Enroll Google Meet hardware\" privilege"],
+    mfa:"If the enrolment account uses 2-Step Verification, please make sure the person with the phone is available on installation day, or turn it off for that account while we enrol the devices.",
+    cols:["Calendar room (resource) name",""],secret:0,enrol:true,short:"A Meet hardware licence per device, a calendar room per room, and an account that can enrol devices."},
+  webex:{name:"Cisco Webex devices",guide:"Cisco's guide to adding room devices in Control Hub",
+    intro:"Each room needs a Workspace in your company's Webex Control Hub with a licence, and an activation code to link the room equipment to it.",
+    checks:["A Workspace has been created in Control Hub for each room","A licence is assigned to each Workspace","Activation codes have been generated (room device codes last 7 days, so please create them close to installation)"],
+    cols:["Workspace name in Control Hub","Activation code (16 digits)"],secret:0,short:"A Workspace and licence per room in Control Hub, plus an activation code (lasts 7 days)."}
+};
+/* Used when the PM lets the client choose: one table that suits any provider */
+const RFI_GENERIC={name:"Your meeting room provider",
+  checks:["The room accounts (or rooms / Workspaces) have been created","A licence is assigned to each room","Microsoft Teams only: MFA is turned off for the room accounts","Zoom or Webex only: activation codes have been generated close to installation"],
+  cols:["Account / room / Workspace","Password or activation code"],secret:1};
+const RFI_KEYS=Object.keys(RFI_PROVIDERS);
+const RFI_MIN_ROWS=5;
+let rfiP=null, rfiStep=1;
+const rEsc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rDate=d=>{if(!d)return'';const t=new Date(d);return isNaN(t)?String(d):t.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});};
+const rDT=t=>t?new Date(t).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+function rfiTask(p){for(const ph of (p.phases||[]))for(const t of (ph.tasks||[]))if((t.text||'').trim().toLowerCase()===RFI_TASK.toLowerCase())return t;return null;}
+function rfiData(p){
+  const t=rfiTask(p); if(!t) return null;
+  if(!t.rfi) t.rfi={client:'',contactName:'',contactEmail:'',installDate:'',returnBy:'',provider:'',rooms:[{name:''}],
+    pmName:(spAccount&&(spAccount.name||''))||'',pmEmail:(spAccount&&spAccount.username||'').toLowerCase(),pmPhone:'',note:'',status:'Draft',sentAt:null,answers:null,returned:null};
+  return t.rfi;
+}
+function rfiPill(p){
+  const t=rfiTask(p); const r=t&&t.rfi;
+  const el=document.createElement('span');
+  el.style.cssText='font-size:9px;font-weight:700;border-radius:3px;padding:1px 5px;flex-shrink:0;white-space:nowrap;align-self:center;margin-left:auto;text-transform:uppercase;letter-spacing:0.04em';
+  if(!r){el.textContent='Not started';el.style.cssText+=';color:#8aada9;border:1px solid var(--wsav-border)';return el;}
+  el.textContent=r.status==='Returned'?'Returned':r.status==='Sent'?'With client':'Draft';
+  el.style.cssText+=r.status==='Returned'?';color:#6ee68b;border:1px solid rgba(46,204,113,0.4);background:rgba(46,204,113,0.12)':r.status==='Sent'?';color:#D4A017;border:1px solid rgba(212,160,23,0.4);background:rgba(212,160,23,0.12)':';color:#7ec8f5;border:1px solid rgba(52,152,219,0.4);background:rgba(52,152,219,0.12)';
+  return el;
+}
+function rfiSave(){if(rfiP){saveProject(rfiP);if(typeof renderGrid==='function')renderGrid();}}
+let rfiSaveT=null; function rfiTouch(){clearTimeout(rfiSaveT);rfiSaveT=setTimeout(rfiSave,700);}
+function openRfiModal(p){
+  rfiP=p; const r=rfiData(p); if(!r){alert('This project has no “'+RFI_TASK+'” task.');return;}
+  rfiStep=r.status==='Draft'?1:r.status==='Sent'?3:4;
+  let m=document.getElementById('rfi-modal');
+  if(!m){m=document.createElement('div');m.className='modal-bg';m.id='rfi-modal';m.innerHTML='<div class="modal rfi-modal" role="dialog" aria-modal="true" aria-labelledby="rfi-title"></div>';document.body.appendChild(m);
+    m.addEventListener('click',e=>{if(e.target===m)closeRfiModal();});
+    m.addEventListener('input',rfiInput);m.addEventListener('change',rfiChange);}
+  m.classList.add('open'); renderRfiModal();
+}
+function closeRfiModal(){clearTimeout(rfiSaveT);rfiSave();const m=document.getElementById('rfi-modal');if(m)m.classList.remove('open');if(rfiP&&typeof renderPhasesInPanel==='function')renderPhasesInPanel(rfiP);rfiP=null;}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('rfi-modal')?.classList.contains('open'))closeRfiModal();});
+function rfiInput(e){const t=e.target,r=rfiData(rfiP);if(!r)return;
+  if(t.dataset.r&&t.tagName!=='SELECT'){r[t.dataset.r]=t.value;rfiTouch();}
+  if(t.dataset.room){r.rooms[+t.dataset.room].name=t.value;rfiTouch();}}
+function rfiChange(e){const t=e.target,r=rfiData(rfiP);if(!r)return;if(t.dataset.r&&t.tagName==='SELECT'){r[t.dataset.r]=t.value;rfiTouch();}}
+const RFI_STEPS=['Client','Rooms','Send','Responses'];
+function renderRfiModal(){
+  const p=rfiP, r=rfiData(p), box=document.querySelector('#rfi-modal .rfi-modal');
+  const f=(k,label,type='text',ph='')=>`<div class="modal-field"><label>${label}</label><input class="wsav-input" type="${type}" data-r="${k}" value="${rEsc(r[k])}" ${ph?`placeholder="${rEsc(ph)}"`:''}></div>`;
+  const pill=`<span class="rfi-status s-${r.status}">${r.status==='Sent'?'With client':r.status}</span>`;
+  const body={
+   1:()=>`<p class="rfi-hint">Shown on the client's form so they know it's theirs.</p>
+     <div class="rfi-grid">${f('client','Client company')}${f('contactName','Client contact name')}${f('contactEmail','Client contact email','email')}
+     <div class="modal-field"><label>Room provider</label><select class="wsav-input" data-r="provider"><option value="">Let the client choose</option>${RFI_KEYS.map(k=>`<option value="${k}" ${r.provider===k?'selected':''}>${RFI_PROVIDERS[k].name}</option>`).join('')}</select></div>
+     ${f('installDate','Installation date','date')}${f('returnBy','Please return by','date')}</div>
+     <p class="rfi-hint">Tip: ask for it back about a week before installation – Zoom and Webex activation codes expire after 7–10 days.</p>
+     <details class="rfi-more"><summary>Your details · ${rEsc([r.pmName,r.pmEmail,r.pmPhone].filter(Boolean).join(' · '))}</summary>
+     <div class="rfi-grid">${f('pmName','Your name')}${f('pmEmail','Your email','email')}${f('pmPhone','Your phone')}</div>
+     <div class="modal-field"><label>Personal note to the client (optional)</label><textarea class="wsav-input" data-r="note" rows="2">${rEsc(r.note)}</textarea></div></details>`,
+   2:()=>`<p class="rfi-hint">These are filled into the client's table. The form always has at least five rows, plus one for every room you add.</p>
+     ${r.rooms.map((x,i)=>`<div class="rfi-room"><span>${i+1}</span><input class="wsav-input" type="text" data-room="${i}" value="${rEsc(x.name)}" placeholder="e.g. Boardroom 3.01"><button type="button" class="rfi-x" aria-label="Remove room" onclick="rfiRemoveRoom(${i})">✕</button></div>`).join('')}
+     ${r.rooms.length<RFI_MAX_ROOMS?`<button type="button" class="btn-outline" style="margin-top:6px" onclick="rfiData(rfiP).rooms.push({name:''});rfiTouch();renderRfiModal();const i=document.querySelectorAll('#rfi-modal [data-room]');i[i.length-1].focus()">+ Add Room</button>`:''}`,
+   3:()=>rfiSendHTML(p,r),
+   4:()=>rfiRespHTML(p,r)}[rfiStep]();
+  box.innerHTML=`<div class="rfi-top"><div><div class="modal-title" id="rfi-title" style="margin-bottom:4px">Room Account RFI</div><div class="rfi-sub">${rEsc(p.num||'')} · ${rEsc(p.name||'')}</div></div>${pill}<button type="button" class="rfi-close" aria-label="Close" onclick="closeRfiModal()">✕</button></div>
+   <div class="rfi-tabs">${RFI_STEPS.map((n,i)=>`<button type="button" class="${rfiStep===i+1?'on':''}" onclick="rfiStep=${i+1};renderRfiModal()">${i+1}. ${n}</button>`).join('')}</div>
+   <div class="rfi-body">${body}</div>
+   <div class="modal-actions" style="justify-content:space-between">${rfiStep>1?`<button type="button" class="btn-outline" onclick="rfiStep--;renderRfiModal()">← ${RFI_STEPS[rfiStep-2]}</button>`:'<span></span>'}
+   ${rfiStep<4?`<button type="button" class="btn-gold" onclick="rfiStep++;renderRfiModal()">Next: ${RFI_STEPS[rfiStep]} →</button>`:`<button type="button" class="btn-gold" onclick="closeRfiModal()">Done</button>`}</div>`;
+}
+function rfiRemoveRoom(i){const r=rfiData(rfiP);r.rooms.splice(i,1);if(!r.rooms.length)r.rooms.push({name:''});rfiTouch();renderRfiModal();}
+function rfiProblems(r){const x=[];if(!r.client)x.push('client company');if(!r.rooms.some(y=>(y.name||'').trim()))x.push('at least one room');if(!r.pmEmail)x.push('your email');return x;}
+function rfiPdfName(p,r){return [p.num,'Meeting-Room-Setup',(r.client||'').replace(/[^\w\- ]+/g,'').trim()].filter(Boolean).join('_').replace(/\s+/g,'-')+'.pdf';}
+function rfiEmailParts(p,r){
+  const P=RFI_PROVIDERS[r.provider];
+  const subject=`Meeting room set-up – details needed${p.name?' for '+p.name:''}${r.returnBy?' by '+rDate(r.returnBy):''}`;
+  const body=`Hi ${(r.contactName||'').split(' ')[0]||'there'},
+
+To get your meeting rooms ready${r.installDate?' for installation on '+rDate(r.installDate):''}, we need the sign-in details for your ${P?P.name+' ':''}room accounts. Your IT team or IT provider will usually need to set these up first.
+
+I've attached a short form. It explains what's needed and links to the provider's own set-up guide.
+
+How to fill it in:
+1. Open the attached PDF in Adobe Acrobat Reader, Microsoft Edge or Google Chrome.
+2. Type in the boxes and tick the options. Where a question is about your IT, pass it to your IT team or tick "Not sure".
+3. Save it, then reply to this email with the saved form attached.
+${r.returnBy?`
+Please could you send it back by ${rDate(r.returnBy)}${r.installDate?', so everything is ready for '+rDate(r.installDate):''}.
+`:''}
+If you'd rather not email passwords, leave them blank and we'll arrange another way to receive them.
+
+Kind regards,
+${r.pmName}${r.pmPhone?'\n'+r.pmPhone:''}
+Workspace AV`;
+  return {subject,body,mailto:`mailto:${encodeURIComponent(r.contactEmail||'')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`};
+}
+function rfiMarkSent(){const r=rfiData(rfiP);if(r.status==='Draft'){r.status='Sent';r.sentAt=Date.now();rfiTouch();setTimeout(renderRfiModal,50);}}
+async function rfiCopy(t,btn){try{await navigator.clipboard.writeText(t);if(btn){const o=btn.textContent;btn.textContent='Copied';setTimeout(()=>btn.textContent=o,1500);}}catch(e){prompt('Copy this:',t);}}
+async function rfiAttach(p,name,blob){
+  if(!p.spId) return '';
+  await refreshSPToken();
+  const nm=name.replace(/[#%&*:<>?\/{|}~"']/g,'_');
+  const base=`${SP_SITE}/_api/web/lists/getbytitle('${encodeURIComponent(SP_LIST)}')/items(${p.spId})/AttachmentFiles`;
+  try{await fetch(`${base}/getByFileName('${encodeURIComponent(nm)}')`,{method:'POST',headers:{'Accept':'application/json;odata=nometadata','Authorization':`Bearer ${spToken}`,'X-HTTP-Method':'DELETE','IF-MATCH':'*'}});}catch(e){}
+  const res=await fetch(`${base}/add(FileName='${encodeURIComponent(nm)}')`,{method:'POST',headers:{'Accept':'application/json;odata=nometadata','Authorization':`Bearer ${spToken}`},body:blob});
+  if(!res.ok) throw new Error(res.status+' '+(await res.text()).slice(0,120));
+  const j=await res.json().catch(()=>({})); return j.ServerRelativeUrl?('https://workspaceav1.sharepoint.com'+j.ServerRelativeUrl):'';
+}
+async function rfiMakePdf(btn){
+  const p=rfiP,r=rfiData(p); if(btn){btn.disabled=true;btn.textContent='Creating…';}
+  try{
+    const blob=await rfiBuildPdf(p,r), name=rfiPdfName(p,r);
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+    let url=''; try{url=await rfiAttach(p,name,blob);}catch(e){console.warn('RFI attach failed',e);}
+    r.pdf={name,url,at:Date.now(),provider:r.provider}; rfiSave(); renderRfiModal();
+  }catch(e){alert("Couldn't create the PDF: "+e.message); if(btn){btn.disabled=false;btn.textContent='Create Form PDF';}}
+}
+function rfiSendHTML(p,r){
+  const prob=rfiProblems(r);
+  if(prob.length) return `<div class="rfi-warn">Add ${prob.map(rEsc).join(', ')} first.</div>`;
+  const stale=r.pdf&&r.pdf.provider!==r.provider;
+  const e=rfiEmailParts(p,r); window._rfiEmail=e;
+  return `<div class="rfi-stepn"><b>1</b>Create the form</div>
+   <p class="rfi-hint">A fillable PDF in Workspace AV branding, ${r.provider?`written for <strong>${rEsc(RFI_PROVIDERS[r.provider].name)}</strong>`:`with a provider dropdown and short guidance for all four providers (you chose “Let the client choose”)`}. It downloads and is also saved to this project in SharePoint.</p>
+   <div class="rfi-actions"><button type="button" class="btn-gold" onclick="rfiMakePdf(this)">${r.pdf?'Create It Again':'Create Form PDF'}</button>
+   ${r.pdf?`<span class="rfi-hint" style="margin:0">${r.pdf.url?`<a href="${rEsc(r.pdf.url)}" target="_blank" rel="noopener" style="color:var(--wsav-gold)">${rEsc(r.pdf.name)}</a>`:rEsc(r.pdf.name)} · ${rDT(r.pdf.at)}</span>`:''}</div>
+   ${stale?`<div class="rfi-warn" style="margin-top:10px">You've changed the provider since creating the PDF – create it again.</div>`:''}
+   <div class="rfi-stepn" style="margin-top:18px"><b>2</b>Email it to the client</div>
+   <div class="modal-field"><label>Subject</label><input class="wsav-input" readonly value="${rEsc(e.subject)}"></div>
+   <div class="modal-field"><label>Message</label><textarea class="wsav-input" readonly rows="8">${rEsc(e.body)}</textarea></div>
+   <div class="rfi-actions"><a class="btn-gold" style="text-decoration:none" href="${rEsc(e.mailto)}" onclick="rfiMarkSent()">Open In Outlook</a>
+   <button type="button" class="btn-outline" onclick="rfiCopy(window._rfiEmail.subject+'\\n\\n'+window._rfiEmail.body,this);rfiMarkSent()">Copy Email</button>
+   <span class="rfi-hint" style="margin:0">Remember to attach the PDF.</span></div>
+   ${r.sentAt?`<p class="rfi-hint" style="margin-top:10px">Sent ${rDT(r.sentAt)}.</p>`:''}`;
+}
+function rfiLoadScript(src){return new Promise((res,rej)=>{if(window.PDFLib)return res();const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('Could not load the PDF reader'));document.head.appendChild(s);});}
+/* ---------- the client's fillable PDF ---------- */
+const rWin=s=>String(s??'').replace(/[–—]/g,'-').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/…/g,'...').replace(/[^\x20-\x7E\xA0-\xFF\n]/g,'');
+async function rfiBuildPdf(p,r){
+  await rfiLoadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js');
+  const {PDFDocument,StandardFonts,rgb,PDFString,PDFName}=PDFLib;
+  const doc=await PDFDocument.create(); doc.setTitle(`Meeting room set-up – ${r.client||''}`); doc.setAuthor('Workspace Audio Visual');
+  const font=await doc.embedFont(StandardFonts.Helvetica), bold=await doc.embedFont(StandardFonts.HelveticaBold);
+  const logoSrc=(document.querySelector('.header-logo')||document.querySelector('.signin-logo')||{}).src;
+  const logo=logoSrc?await doc.embedPng(await fetch(logoSrc).then(x=>x.arrayBuffer())):null;
+  const form=doc.getForm();
+  const MG=rgb(1/255,51/255,52/255),GOLD=rgb(221/255,179/255,87/255),INK=rgb(2/255,20/255,20/255),MUT=rgb(0.3,0.37,0.37),BOX=rgb(0.97,0.96,0.94),LINE=rgb(0.8,0.78,0.73),WH=rgb(1,1,1);
+  const W=595.28,H=841.89,M=44,CW=W-2*M; let page,y,pageNo=0;
+  const generic=!r.provider, P=generic?RFI_GENERIC:RFI_PROVIDERS[r.provider];
+  const wrap=(t,f,sz,w)=>{const out=[];rWin(t).split('\n').forEach(par=>{let line='';par.split(' ').forEach(word=>{const test=line?line+' '+word:word;if(f.widthOfTextAtSize(test,sz)>w&&line){out.push(line);line=word;}else line=test;});out.push(line);});return out;};
+  const footer=()=>page.drawText(rWin(`Workspace Audio Visual Ltd · ${r.pmName||''} · ${r.pmEmail||''}${r.pmPhone?' · '+r.pmPhone:''} · Page ${pageNo}`),{x:M,y:22,size:7.5,font,color:MUT});
+  const newPage=()=>{if(page)footer();page=doc.addPage([W,H]);pageNo++;y=H-M;if(pageNo>1){page.drawText(rWin(`Meeting room set-up · ${r.client||''}`),{x:M,y:H-28,size:8,font:bold,color:MG});y=H-48;}};
+  const need=h=>{if(y-h<44)newPage();};
+  const text=(t,{f=font,sz=9.5,col=INK,gap=3,x=M,w=CW}={})=>{wrap(t,f,sz,w).forEach(l=>{need(sz+4);page.drawText(l,{x,y:y-sz,size:sz,font:f,color:col});y-=sz+3;});y-=gap;};
+  const link=(label,url)=>{need(26);const sz=9.5,w=bold.widthOfTextAtSize(rWin(label),sz);
+    page.drawText(rWin(label),{x:M,y:y-sz,size:sz,font:bold,color:MG});page.drawLine({start:{x:M,y:y-sz-1.5},end:{x:M+w,y:y-sz-1.5},thickness:0.6,color:MG});
+    const annot=doc.context.obj({Type:'Annot',Subtype:'Link',Rect:[M,y-sz-3,M+w,y+1],Border:[0,0,0],A:{Type:'Action',S:'URI',URI:PDFString.of(url)}});
+    page.node.addAnnot(doc.context.register(annot)); y-=sz+4; text(url,{sz:7.5,col:MUT,gap:6});};
+  const field=(id,x,w,h,val,opts={})=>{const tf=form.createTextField(id);if(opts.multi)tf.enableMultiline();tf.addToPage(page,{x,y:y-h,width:w,height:h,borderColor:LINE,backgroundColor:BOX,borderWidth:0.7,font});tf.setFontSize(opts.size||9.5);if(val)tf.setText(rWin(val));};
+  const drop=(id,x,w,options,val)=>{const dd=form.createDropdown(id);dd.addOptions(options.map(rWin));dd.addToPage(page,{x,y:y-18,width:w,height:18,borderColor:LINE,backgroundColor:BOX,borderWidth:0.7,font});dd.setFontSize(9.5);if(val)dd.select(rWin(val));};
+  const label=(t,x)=>page.drawText(rWin(t),{x,y:y-9,size:8,font:bold,color:MG});
+  const row=(cells)=>{need(34);const gap=10,w=(CW-gap*(cells.length-1))/cells.length;cells.forEach((c,i)=>label(c.label,M+i*(w+gap)));y-=12;
+    cells.forEach((c,i)=>{const x=M+i*(w+gap);c.options?drop(c.id,x,w,c.options,c.val):field(c.id,x,w,18,c.val);});y-=26;};
+  const head=(n,t)=>{need(80);y-=4;page.drawRectangle({x:M,y:y-20,width:CW,height:20,color:MG});page.drawText(rWin(`${n}. ${t}`),{x:M+9,y:y-14,size:10.5,font:bold,color:WH});y-=30;};
+  const check=(id,lbl)=>{need(16);const cb=form.createCheckBox(id);cb.addToPage(page,{x:M,y:y-11,width:10,height:10,borderColor:MG,backgroundColor:WH,borderWidth:0.7});
+    const ls=wrap(lbl,font,9,CW-18);ls.forEach((l,i)=>page.drawText(l,{x:M+16,y:y-9.5-i*12,size:9,font,color:INK}));y-=ls.length*12+5;};
+  const note=(t,title)=>{const ls=wrap(t,font,9,CW-20);const h=ls.length*12+(title?16:0)+12;need(h+6);
+    page.drawRectangle({x:M,y:y-h,width:CW,height:h,color:rgb(0.99,0.96,0.89),borderColor:rgb(0.91,0.81,0.53),borderWidth:0.7});let yy=y-14;
+    if(title){page.drawText(rWin(title),{x:M+10,y:yy,size:9.5,font:bold,color:INK});yy-=14;} ls.forEach(l=>{page.drawText(l,{x:M+10,y:yy,size:9,font,color:INK});yy-=12;}); y-=h+8;};
+  /* cover */
+  newPage();
+  page.drawRectangle({x:0,y:H-118,width:W,height:118,color:MG});
+  if(logo){const ls=105/logo.width;page.drawImage(logo,{x:M,y:H-20-logo.height*ls,width:105,height:logo.height*ls});}
+  page.drawText('Meeting room set-up',{x:M,y:H-90,size:19,font:bold,color:WH});
+  page.drawText(rWin(`${r.client||''}${p.num?' · Ref '+p.num:''}${r.installDate?' · Installation '+rDate(r.installDate):''}`),{x:M,y:H-105,size:9.5,font,color:GOLD});
+  y=H-138;
+  text(`Hello${r.contactName?' '+r.contactName.split(' ')[0]:''},`,{sz:10.5,gap:2});
+  text(r.note||`We're getting your meeting rooms ready${r.installDate?' for installation on '+rDate(r.installDate):''}. To connect them we need the sign-in details for your room accounts, which your IT team or IT provider sets up. It takes a few minutes.`,{sz:10,gap:6});
+  const steps=[`1. Fill this in using Adobe Acrobat Reader, Microsoft Edge or Google Chrome. Pass anything technical to your IT team.`,`2. Save it, then email it back to ${r.pmName||'us'} at ${r.pmEmail||''}${r.returnBy?' by '+rDate(r.returnBy):''}.`,`3. Prefer not to email passwords? Leave them blank and we'll arrange another way.`];
+  need(56);page.drawRectangle({x:M,y:y-50,width:CW,height:50,color:rgb(0.95,0.93,0.9)});let iy=y-14;steps.forEach(l=>{page.drawText(rWin(l),{x:M+10,y:iy,size:8.8,font,color:INK});iy-=13;});y-=60;
+  /* 1–3 */
+  head(1,'About you');
+  row([{id:'company',label:'Company',val:r.client},{id:'contact_name',label:'Your name',val:r.contactName}]);
+  row([{id:'contact_email',label:'Email',val:r.contactEmail},{id:'contact_phone',label:'Phone'}]);
+  head(2,'Your IT');
+  row([{id:'it_managed',label:'Who looks after your IT?',options:['Our own in-house IT team','An external IT company','A mix of both','Not sure']},{id:'it_company',label:'IT company name (if external)'}]);
+  row([{id:'it_contact',label:'IT contact name'},{id:'it_email',label:'Their email'},{id:'it_phone',label:'Their phone'}]);
+  head(3,'Your meeting room provider');
+  if(generic){ row([{id:'provider',label:'Which service will your meeting rooms use? (choose from the list)',options:[...RFI_KEYS.map(k=>RFI_PROVIDERS[k].name),'Not sure yet']}]);
+    form.createTextField('form_type').addToPage(page,{x:W-40,y:12,width:1,height:1,borderWidth:0}); form.getTextField('form_type').setText('generic'); }
+  else { text(RFI_PROVIDERS[r.provider].name,{f:bold,sz:11,col:MG,gap:2}); text("If this isn't right, please tell us in section 5.",{sz:8.5,col:MUT,gap:4});
+    form.createTextField('provider_key').addToPage(page,{x:W-40,y:12,width:1,height:1,borderWidth:0}); form.getTextField('provider_key').setText(r.provider); }
+  /* 4 */
+  head(4,generic?'Setting up your room accounts':'Setting up your '+P.name);
+  if(generic){
+    text('What your IT team needs to do depends on your provider. Find yours below - each has a link to the provider\'s own step-by-step guide.',{sz:9.5,gap:6});
+    RFI_KEYS.forEach(k=>{const q=RFI_PROVIDERS[k];need(48);text(q.name,{f:bold,sz:9.5,col:MG,gap:1});text(q.short,{sz:9,gap:1});link(q.guide,RFI_GUIDES[k]);});
+    note(RFI_PROVIDERS.teams.mfa,'Microsoft Teams Rooms: please turn off MFA for the room accounts');
+  } else {
+    text(P.intro,{sz:9.5,gap:5}); link(P.guide,RFI_GUIDES[r.provider]);
+    if(P.mfa) note(P.mfa,r.provider==='teams'?'Please turn off MFA for the room accounts':'About 2-Step Verification');
+  }
+  text('Please tick when done (or pass this to your IT team):',{f:bold,sz:9,gap:4});
+  P.checks.forEach((t,i)=>check(`chk_${i+1}`,t));
+  if(!generic&&P.enrol) row([{id:'enrol_email',label:'Enrolment account email'},{id:'enrol_secret',label:'Enrolment account password'}]);
+  y-=2; need(110); text('Room details',{f:bold,sz:10,col:MG,gap:4});
+  const two=!!P.cols[1];
+  const cols=[['#',22],['Room name',two?150:220],[P.cols[0],two?163:CW-22-220],...(two?[[P.cols[1],CW-22-150-163]]:[])];
+  const th=()=>{let x=M;cols.forEach(([t,w])=>{page.drawRectangle({x,y:y-16,width:w,height:16,color:rgb(0.95,0.93,0.9)});page.drawText(rWin(t),{x:x+4,y:y-11.5,size:8,font:bold,color:MG});x+=w;});y-=18;};
+  need(60); th();
+  const rooms=r.rooms.map(x=>(x.name||'').trim()).filter(Boolean);
+  const n=Math.min(RFI_MAX_ROOMS,Math.max(RFI_MIN_ROWS,rooms.length));
+  for(let i=1;i<=n;i++){ if(y-24<44){newPage();th();} let x=M; page.drawText(String(i),{x:x+7,y:y-13,size:9,font,color:MUT}); x+=cols[0][1];
+    field(`room${i}_name`,x,cols[1][1]-4,18,rooms[i-1]||''); x+=cols[1][1];
+    field(`room${i}_a`,x,cols[2][1]-4,18,''); x+=cols[2][1];
+    if(two) field(`room${i}_b`,x,cols[3][1],18,''); y-=22; }
+  text('More rooms? List them in section 5.',{sz:8,col:MUT,gap:4});
+  /* 5 */
+  head(5,'Anything else'); need(60); field('notes',M,CW,44,'',{multi:true}); y-=52; check('call',"I'd like a quick call to go through this");
+  y-=4; text(`Thank you. Please save this form and email it to ${r.pmEmail||'us'}.`,{f:bold,sz:10,col:MG});
+  footer(); form.updateFieldAppearances(font);
+  return new Blob([await doc.save()],{type:'application/pdf'});
+}
+
+async function rfiImport(file){
+  const p=rfiP, r=rfiData(p); if(!file) return; const st=document.getElementById('rfi-import-st'); st.textContent='Reading '+file.name+'…';
+  try{
+    await rfiLoadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js');
+    const doc=await PDFLib.PDFDocument.load(await file.arrayBuffer(),{ignoreEncryption:true});
+    const raw={}; doc.getForm().getFields().forEach(fd=>{const n=fd.getName();
+      if(fd instanceof PDFLib.PDFTextField)raw[n]=fd.getText()||'';else if(fd instanceof PDFLib.PDFCheckBox)raw[n]=fd.isChecked();else if(fd instanceof PDFLib.PDFDropdown)raw[n]=(fd.getSelected()||[])[0]||'';else if(fd instanceof PDFLib.PDFRadioGroup)raw[n]=fd.getSelected()||'';});
+    if(!Object.keys(raw).length){st.textContent='That PDF has no form fields. If it was printed and scanned, read the details from it directly.';return;}
+    const prov=raw.provider_key||RFI_KEYS.find(k=>RFI_PROVIDERS[k].name===raw.provider)||'';
+    const generic=raw.form_type==='generic';
+    const secret=k=>k==='enrol_secret'||((generic||RFI_PROVIDERS[prov]?.secret)&&/^room\d+_b$/.test(k));
+    /* passwords stay in the client's PDF only – never copied into SharePoint */
+    const ans={};Object.entries(raw).forEach(([k,v])=>{ans[k]=secret(k)?(String(v).trim()?'__provided__':''):v;});ans.provider_key=prov;ans.generic=generic;
+    r.answers=ans; r.status='Returned'; r.returned={name:file.name,at:Date.now()};
+    const t=rfiTask(p); if(t) t.done=true;
+    try{r.returned.url=await rfiAttach(p,'Returned_'+file.name,file);}catch(e){console.warn('RFI attachment failed',e);}
+    rfiSave(); renderRfiModal();
+  }catch(e){st.textContent="Couldn't read that file: "+e.message;}
+}
+function rfiRespHTML(p,r){
+  const a=r.answers, PP=a&&RFI_PROVIDERS[a.provider_key], P=a&&(a.generic?{...RFI_GENERIC,name:PP?PP.name:(a.provider||'Provider not chosen'),enrol:false}:PP);
+  const show=v=>v==='__provided__'?'<span style="color:#6ee68b">Provided – see the client\'s PDF</span>':rEsc(v||'');
+  const rows=a?Array.from({length:RFI_MAX_ROOMS},(_,i)=>[a[`room${i+1}_name`],a[`room${i+1}_a`],a[`room${i+1}_b`]]).filter(x=>x.some(v=>v&&String(v).trim())):[];
+  const kv=(k,v)=>`<div class="rfi-kv"><span>${k}</span><strong>${v||'<span style="opacity:.5;font-weight:400">–</span>'}</strong></div>`;
+  return `<p class="rfi-hint">Upload the completed form the client emails back. The answers are read in, the PDF is saved to the project and “${RFI_TASK}” is ticked. Passwords aren't copied into the dashboard data – they stay in the client's PDF.</p>
+   <div class="rfi-actions"><label class="btn-gold" style="cursor:pointer">Upload Completed Form<input type="file" accept=".pdf" hidden onchange="rfiImport(this.files[0])"></label>
+   <span class="rfi-hint" id="rfi-import-st" style="margin:0">${r.returned?`Returned: ${r.returned.url?`<a href="${rEsc(r.returned.url)}" target="_blank" rel="noopener" style="color:var(--wsav-gold)">${rEsc(r.returned.name)}</a>`:rEsc(r.returned.name)} · ${rDT(r.returned.at)}`:''}</span></div>
+   ${a?`<div class="rfi-sec"><div class="rfi-sec-h">${P?rEsc(P.name):'Provider not chosen'}<button type="button" class="btn-outline" style="padding:4px 10px;font-size:11px" onclick="rfiCopy(rfiSummary(rfiP),this)">Copy Summary</button></div>
+     ${P?P.checks.map((c,i)=>kv(rEsc(c),a['chk_'+(i+1)]?'<span style="color:#6ee68b">✓ Done</span>':'<span style="color:#D4A017">Not confirmed</span>')).join(''):''}
+     ${P&&P.enrol?kv('Enrolment account',rEsc(a.enrol_email)+(a.enrol_secret?' · '+show(a.enrol_secret):'')):''}
+     ${rows.length?`<table class="rfi-table"><thead><tr><th>Room</th><th>${rEsc(P?P.cols[0]:'Detail')}</th>${P&&P.cols[1]?`<th>${rEsc(P.cols[1])}</th>`:''}</tr></thead><tbody>${rows.map(x=>`<tr><td>${rEsc(x[0])}</td><td>${show(x[1])}</td>${P&&P.cols[1]?`<td>${show(x[2])}</td>`:''}</tr>`).join('')}</tbody></table>`:'<p class="rfi-hint">No room details given.</p>'}</div>
+   <div class="rfi-sec"><div class="rfi-sec-h">Contacts</div>
+     ${kv('Client contact',rEsc([a.contact_name,a.contact_email,a.contact_phone].filter(Boolean).join(' · ')))}${kv('IT looked after by',rEsc(a.it_managed))}${a.it_company?kv('IT company',rEsc(a.it_company)):''}
+     ${kv('IT contact',rEsc([a.it_contact,a.it_email,a.it_phone].filter(Boolean).join(' · ')))}${kv('Notes',rEsc(a.notes))}${kv('Wants a call',a.call?'Yes':'No')}</div>`
+   :`<p class="rfi-hint" style="margin-top:14px">No answers yet.${r.status==='Sent'?' Waiting for the client to send the form back.':''}</p>`}`;
+}
+function rfiSummary(p){
+  const r=rfiData(p),a=r.answers||{},PP=RFI_PROVIDERS[a.provider_key],P=a.generic?{...RFI_GENERIC,name:PP?PP.name:(a.provider||'not chosen')}:PP;
+  const L=[`ROOM ACCOUNTS – ${p.name||''}${p.num?' ('+p.num+')':''}`,`Client: ${a.company||r.client}`,`Provider: ${P?P.name:'not chosen'}`,`IT: ${a.it_managed||'?'}${a.it_company?' – '+a.it_company:''} | ${[a.it_contact,a.it_email,a.it_phone].filter(Boolean).join(', ')}`,''];
+  if(P){P.checks.forEach((c,i)=>L.push(`[${a['chk_'+(i+1)]?'x':' '}] ${c}`));L.push('');
+    for(let i=1;i<=RFI_MAX_ROOMS;i++){const n=a[`room${i}_name`];if(!n&&!a[`room${i}_a`])continue;const v=x=>x==='__provided__'?'(see client PDF)':x||'-';
+      L.push(`${n||'Room '+i}: ${P.cols[0]}: ${v(a[`room${i}_a`])}${P.cols[1]?` | ${P.cols[1]}: ${v(a[`room${i}_b`])}`:''}`);}}
+  if(a.notes)L.push('','Notes: '+a.notes);
+  return L.join('\n');
+}
 
 /* ═══════════════════════════════════════════════════
    INIT — sign-in flow
